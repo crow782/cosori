@@ -84,4 +84,4 @@ The optional GM67 barcode scanner firmware is in [barcode scanner.yaml](barcode%
 
 The first Home Assistant bridge is in [homeassistant/README.md](homeassistant/README.md), with the package at [homeassistant/packages/food_diary.yaml](homeassistant/packages/food_diary.yaml). The intended workflow is: tare the empty plate, scan the product, add the food, then pair the barcode with the next positive stable scale reading.
 
-This is currently only the barcode/weight hand-off. Open Food Facts lookup, manual product entry, persistent diary storage and nutrient totals are not implemented yet.
+The Home Assistant package now performs Open Food Facts v3 lookup and calculates nutrient amounts for the latest weighed portion. Manual product entry, persistent multi-entry diary storage and meal/day totals are still planned.
