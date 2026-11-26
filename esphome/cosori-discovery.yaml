@@ -1,0 +1,66 @@
+# Cosori CNS-R101S - BLE discovery firmware
+# Use this on an ESP32 to identify a scale's BLE address before configuring ble_client.
+# Search the logs for "COSORI" or service UUID "1910".
+# No fixed MAC and no BLE connection are used in this discovery configuration.
+
+esphome:
+  name: cosori-ble-discovery
+  friendly_name: Cosori BLE Discovery
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  logs:
+    esp32_ble_tracker: WARN
+    esp32_ble: WARN
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: none
+  ap:
+    ssid: "Cosori-Discovery-Recovery"
+    password: !secret fallback_ap_password
+
+captive_portal:
+
+esp32_ble_tracker:
+  scan_parameters:
+    active: true
+    interval: 1100ms
+    window: 1100ms
+  on_ble_advertise:
+    - then:
+        - lambda: |-
+            const std::string name = x.get_name();
+            bool cosori_name = name.find("COSORI") != std::string::npos;
+            bool has_1910 = false;
+
+            for (auto uuid : x.get_service_uuids()) {
+              const std::string uuid_text = uuid.to_string();
+              if (uuid_text.find("1910") != std::string::npos) {
+                has_1910 = true;
+              }
+            }
+
+            if (cosori_name || has_1910) {
+              ESP_LOGI("cosori_discovery",
+                       "CANDIDATE name='%s' address=%s RSSI=%d dBm",
+                       name.c_str(), x.address_str().c_str(), x.get_rssi());
+              for (auto uuid : x.get_service_uuids()) {
+                ESP_LOGI("cosori_discovery", "  advertised service UUID: %s",
+                         uuid.to_string().c_str());
+              }
+            }
+
+# This firmware only scans and reports candidate devices.
+# Copy the reported address into the definitive firmware's ble_client.mac_address.
