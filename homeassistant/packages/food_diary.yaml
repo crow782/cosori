@@ -1,24 +1,166 @@
-# Food diary bridge: barcode scanner + Cosori CNS-R101S stable weight.
+# Food diary: GM67 barcode scanner + Cosori CNS-R101S + Open Food Facts.
 #
 # Workflow:
 # 1. Put the empty plate/container on the scale and tare it.
 # 2. Scan the product barcode.
-# 3. Add the food to the plate. When the stable weight becomes > 0 g,
-#    this package emits esphome.food_diary_weight_ready.
+# 3. Add the food. The first positive stable net weight is paired with the barcode.
+# 4. Home Assistant looks up the product in Open Food Facts v3 and calculates
+#    the nutrient amounts for the measured portion.
 #
-# The event is a hand-off point for the food-diary logic. It does not yet
-# perform Open Food Facts lookup or persist nutrition entries.
+# This package keeps the latest scan/result in helpers. It is not yet a
+# multi-entry historical diary; persistent meal logging is a later step.
 
 input_text:
   food_diary_pending_barcode:
     name: Food diary pending barcode
     max: 32
     initial: ""
+  food_diary_last_barcode:
+    name: Food diary last barcode
+    max: 32
+    initial: ""
+  food_diary_product_name:
+    name: Food diary product
+    max: 100
+    initial: ""
+  food_diary_product_brand:
+    name: Food diary brand
+    max: 100
+    initial: ""
+  food_diary_product_quantity:
+    name: Food diary package quantity
+    max: 50
+    initial: ""
+  food_diary_nutriments_json:
+    name: Food diary nutrients per 100 g
+    max: 255
+    initial: "{}"
+  food_diary_lookup_status:
+    name: Food diary lookup status
+    max: 100
+    initial: "In attesa"
+
+input_number:
+  food_diary_last_weight_g:
+    name: Food diary last portion weight
+    min: 0
+    max: 20000
+    step: 1
+    unit_of_measurement: g
+    mode: box
+    initial: 0
+
+rest_command:
+  food_diary_openfoodfacts_lookup:
+    url: "https://world.openfoodfacts.org/api/v3/product/{{ barcode }}?fields=code,product_name,brands,quantity,nutriments,ingredients_text,allergens_tags"
+    method: GET
+    headers:
+      User-Agent: "CosoriFoodDiary/0.1 (https://github.com/crow782/cosori)"
+      Accept: "application/json"
+
+template:
+  - sensor:
+      - name: "Food diary portion energy"
+        unique_id: food_diary_portion_energy
+        unit_of_measurement: kcal
+        state: >-
+          {% set n = states('input_text.food_diary_nutriments_json') | from_json(default={}) %}
+          {% set v = n.get('kcal') %}
+          {% set w = states('input_number.food_diary_last_weight_g') | float(0) %}
+          {% if v is number and w > 0 %}
+            {{ (v * w / 100) | round(1) }}
+          {% else %}
+            unknown
+          {% endif %}
+      - name: "Food diary portion protein"
+        unique_id: food_diary_portion_protein
+        unit_of_measurement: g
+        state: >-
+          {% set n = states('input_text.food_diary_nutriments_json') | from_json(default={}) %}
+          {% set v = n.get('protein_g') %}
+          {% set w = states('input_number.food_diary_last_weight_g') | float(0) %}
+          {% if v is number and w > 0 %}
+            {{ (v * w / 100) | round(2) }}
+          {% else %}
+            unknown
+          {% endif %}
+      - name: "Food diary portion carbohydrates"
+        unique_id: food_diary_portion_carbohydrates
+        unit_of_measurement: g
+        state: >-
+          {% set n = states('input_text.food_diary_nutriments_json') | from_json(default={}) %}
+          {% set v = n.get('carbs_g') %}
+          {% set w = states('input_number.food_diary_last_weight_g') | float(0) %}
+          {% if v is number and w > 0 %}
+            {{ (v * w / 100) | round(2) }}
+          {% else %}
+            unknown
+          {% endif %}
+      - name: "Food diary portion sugars"
+        unique_id: food_diary_portion_sugars
+        unit_of_measurement: g
+        state: >-
+          {% set n = states('input_text.food_diary_nutriments_json') | from_json(default={}) %}
+          {% set v = n.get('sugars_g') %}
+          {% set w = states('input_number.food_diary_last_weight_g') | float(0) %}
+          {% if v is number and w > 0 %}
+            {{ (v * w / 100) | round(2) }}
+          {% else %}
+            unknown
+          {% endif %}
+      - name: "Food diary portion fat"
+        unique_id: food_diary_portion_fat
+        unit_of_measurement: g
+        state: >-
+          {% set n = states('input_text.food_diary_nutriments_json') | from_json(default={}) %}
+          {% set v = n.get('fat_g') %}
+          {% set w = states('input_number.food_diary_last_weight_g') | float(0) %}
+          {% if v is number and w > 0 %}
+            {{ (v * w / 100) | round(2) }}
+          {% else %}
+            unknown
+          {% endif %}
+      - name: "Food diary portion saturated fat"
+        unique_id: food_diary_portion_saturated_fat
+        unit_of_measurement: g
+        state: >-
+          {% set n = states('input_text.food_diary_nutriments_json') | from_json(default={}) %}
+          {% set v = n.get('saturated_fat_g') %}
+          {% set w = states('input_number.food_diary_last_weight_g') | float(0) %}
+          {% if v is number and w > 0 %}
+            {{ (v * w / 100) | round(2) }}
+          {% else %}
+            unknown
+          {% endif %}
+      - name: "Food diary portion fiber"
+        unique_id: food_diary_portion_fiber
+        unit_of_measurement: g
+        state: >-
+          {% set n = states('input_text.food_diary_nutriments_json') | from_json(default={}) %}
+          {% set v = n.get('fiber_g') %}
+          {% set w = states('input_number.food_diary_last_weight_g') | float(0) %}
+          {% if v is number and w > 0 %}
+            {{ (v * w / 100) | round(2) }}
+          {% else %}
+            unknown
+          {% endif %}
+      - name: "Food diary portion salt"
+        unique_id: food_diary_portion_salt
+        unit_of_measurement: g
+        state: >-
+          {% set n = states('input_text.food_diary_nutriments_json') | from_json(default={}) %}
+          {% set v = n.get('salt_g') %}
+          {% set w = states('input_number.food_diary_last_weight_g') | float(0) %}
+          {% if v is number and w > 0 %}
+            {{ (v * w / 100) | round(3) }}
+          {% else %}
+            unknown
+          {% endif %}
 
 automation:
   - id: food_diary_capture_scanned_barcode
     alias: Food diary - capture barcode
-    description: Stores the most recently scanned barcode until a stable weight arrives.
+    description: Stores the latest scanned barcode until a stable weight arrives.
     mode: restart
     triggers:
       - trigger: event
@@ -34,10 +176,15 @@ automation:
           entity_id: input_text.food_diary_pending_barcode
         data:
           value: "{{ trigger.event.data.barcode | string }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.food_diary_lookup_status
+        data:
+          value: "Barcode acquisito - in attesa del peso"
 
   - id: food_diary_pair_barcode_with_stable_weight
     alias: Food diary - pair barcode with stable weight
-    description: Emits one event when the scale reports a positive stable net weight for the pending barcode.
+    description: Pairs the pending barcode with the first positive stable net weight.
     mode: single
     triggers:
       - trigger: numeric_state
@@ -57,3 +204,144 @@ automation:
           entity_id: input_text.food_diary_pending_barcode
         data:
           value: ""
+
+  - id: food_diary_lookup_openfoodfacts
+    alias: Food diary - Open Food Facts lookup
+    description: Looks up the scanned product and calculates nutrient amounts for the weighed portion.
+    mode: queued
+    max: 5
+    triggers:
+      - trigger: event
+        event_type: esphome.food_diary_weight_ready
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ trigger.event.data.barcode is defined
+             and trigger.event.data.weight_g is defined
+             and (trigger.event.data.weight_g | float(0)) > 0 }}
+    actions:
+      - variables:
+          barcode: "{{ trigger.event.data.barcode | string }}"
+          weight_g: "{{ trigger.event.data.weight_g | float(0) | round(0) }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.food_diary_last_barcode
+        data:
+          value: "{{ barcode }}"
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.food_diary_last_weight_g
+        data:
+          value: "{{ weight_g }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.food_diary_lookup_status
+        data:
+          value: "Ricerca Open Food Facts..."
+      - action: rest_command.food_diary_openfoodfacts_lookup
+        data:
+          barcode: "{{ barcode }}"
+        response_variable: off_response
+        continue_on_error: true
+      - variables:
+          http_status: "{{ off_response.get('status', 0) if off_response is mapping else 0 }}"
+          off_body: "{{ off_response.get('content', {}) if off_response is mapping else {} }}"
+          off_product: "{{ off_body.get('product', {}) if off_body is mapping else {} }}"
+          product_found: >-
+            {{ (http_status | int(0)) == 200
+               and off_body is mapping
+               and off_body.get('status') in ['success', 'success_with_warnings', 'success_with_errors']
+               and off_product is mapping
+               and (off_product.get('product_name', '') | string | length) > 0 }}
+      - if:
+          - condition: template
+            value_template: "{{ product_found }}"
+        then:
+          - variables:
+              product_name: "{{ off_product.get('product_name', 'Prodotto senza nome') | string }}"
+              product_brand: "{{ off_product.get('brands', '') | string }}"
+              product_quantity: "{{ off_product.get('quantity', '') | string }}"
+              nutrient_json: >-
+                {% set n = off_product.get('nutriments', {}) %}
+                {% set kcal = n.get('energy-kcal_100g') %}
+                {% if kcal is not number and n.get('energy_100g') is number %}
+                  {% set kcal = n.get('energy_100g') / 4.184 %}
+                {% endif %}
+                {{ {
+                  'kcal': kcal if kcal is number else none,
+                  'protein_g': n.get('proteins_100g') if n.get('proteins_100g') is number else none,
+                  'carbs_g': n.get('carbohydrates_100g') if n.get('carbohydrates_100g') is number else none,
+                  'sugars_g': n.get('sugars_100g') if n.get('sugars_100g') is number else none,
+                  'fat_g': n.get('fat_100g') if n.get('fat_100g') is number else none,
+                  'saturated_fat_g': n.get('saturated-fat_100g') if n.get('saturated-fat_100g') is number else none,
+                  'fiber_g': n.get('fiber_100g') if n.get('fiber_100g') is number else none,
+                  'salt_g': n.get('salt_100g') if n.get('salt_100g') is number else none
+                } | to_json }}
+              has_nutrition: >-
+                {% set n = off_product.get('nutriments', {}) %}
+                {{ n.get('energy-kcal_100g') is number
+                   or n.get('energy_100g') is number
+                   or n.get('proteins_100g') is number
+                   or n.get('carbohydrates_100g') is number
+                   or n.get('fat_100g') is number }}
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.food_diary_product_name
+            data:
+              value: "{{ product_name[:100] }}"
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.food_diary_product_brand
+            data:
+              value: "{{ product_brand[:100] }}"
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.food_diary_product_quantity
+            data:
+              value: "{{ product_quantity[:50] }}"
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.food_diary_nutriments_json
+            data:
+              value: "{{ nutrient_json }}"
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.food_diary_lookup_status
+            data:
+              value: >-
+                {% if has_nutrition | bool %}
+                  Prodotto trovato - valori nutrizionali caricati
+                {% else %}
+                  Prodotto trovato - valori nutrizionali assenti
+                {% endif %}
+        else:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.food_diary_product_name
+            data:
+              value: "Prodotto non trovato"
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.food_diary_product_brand
+            data:
+              value: ""
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.food_diary_product_quantity
+            data:
+              value: ""
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.food_diary_nutriments_json
+            data:
+              value: "{}"
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.food_diary_lookup_status
+            data:
+              value: >-
+                {% if (http_status | int(0)) == 404 or (off_body is mapping and off_body.get('status') == 'failure') %}
+                  Barcode assente da Open Food Facts
+                {% else %}
+                  Errore di connessione o risposta API non valida
+                {% endif %}
