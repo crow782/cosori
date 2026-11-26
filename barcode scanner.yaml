@@ -187,9 +187,14 @@ text_sensor:
         - delay: 300ms
         - homeassistant.event:
             event: esphome.barcode_scanned
-            data:
-              barcode: !lambda "return id(last_barcode).state;"
-              result_type: "waiting_weight"
+            data_template:
+              barcode: "{{ barcode }}"
+              result_type: "{{ result_type }}"
+            variables:
+              barcode: !lambda |-
+                return id(last_barcode).state;
+              result_type: !lambda |-
+                return std::string("waiting_weight");
         - script.execute: standby_timer
 
 # Timer to return to standby after showing result (uses configurable timeout)
