@@ -65,12 +65,12 @@ This is a strongly supported preliminary decoder for the observed positive integ
 ## Main firmware sensors and stability
 
 The main firmware exposes two entities:
-- Cosori Weight Raw: decoded value from every valid notification, useful for diagnostics and observing fluctuations. It is explicitly configured with unit g, device_class weight and state_class measurement.
-- Cosori Weight Stable: publishes a new value only after the candidate weight has remained unchanged (within 0.05 g) for 2 seconds. It also declares unit g, device_class weight and state_class measurement.
+- Cosori Weight Raw: decoded value from every valid notification at 0.1 g resolution, useful for diagnostics and observing fluctuations. It declares unit g, device_class weight and state_class measurement.
+- Cosori Weight Stable: rounds each decoded reading to the nearest whole gram and publishes only after the rounded value has remained unchanged for 1.5 seconds. It declares unit g, device_class weight and state_class measurement, with zero decimal places.
 
-Use Cosori Weight Stable in Home Assistant automations that should act only after the scale settles. Keep the raw entity for troubleshooting. Two seconds is a practical starting point and can be adjusted after real-world testing. Stability tracking polls the raw sensor state from an ESPHome interval, avoiding dependence on the BLE sensor on_value automation.
+Stability timing is event-driven: the raw sensor's on_value handler starts or resets the timer only when the rounded whole-gram candidate changes. A separate 100 ms interval checks whether 1.5 seconds have elapsed and publishes the stable integer-gram value. This avoids resetting the timer for sub-gram BLE fluctuations and avoids relying on polling the raw sensor to detect changes. Use Cosori Weight Stable in Home Assistant automations; keep Raw for diagnostics.
 
-The firmware validates the observed packet header and minimum length before decoding. It does not send BLE writes to the scale.
+The firmware validates the observed packet header and minimum length before decoding. It does not send BLE writes to the scale. The revised stability logic is committed but still requires compilation and on-device validation.
 
 ## Security
 
