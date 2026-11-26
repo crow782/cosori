@@ -252,7 +252,7 @@ automation:
                and off_body is mapping
                and off_body.get('status') in ['success', 'success_with_warnings', 'success_with_errors']
                and off_product is mapping
-               and (off_product.get('product_name', '') | string | length) > 0 }}
+               and (off_product | length) > 0 }}
       - if:
           - condition: template
             value_template: "{{ product_found }}"
