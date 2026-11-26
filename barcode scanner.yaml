@@ -188,7 +188,7 @@ text_sensor:
         - homeassistant.event:
             event: esphome.barcode_scanned
             data:
-              barcode: !lambda "return x;"
+              barcode: !lambda "return id(last_barcode).state;"
               result_type: "waiting_weight"
         - script.execute: standby_timer
 
