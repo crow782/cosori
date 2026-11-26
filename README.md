@@ -77,3 +77,11 @@ The firmware validates the observed packet header and minimum length before deco
 - Never commit Wi-Fi passwords, API encryption keys, tokens or personal secrets.
 - Keep credentials in ESPHome secrets.yaml, excluded from version control.
 - This is an independent community reverse-engineering effort and is not affiliated with or endorsed by Cosori.
+
+## Barcode scanner and food diary
+
+The optional GM67 barcode scanner firmware is in [barcode scanner.yaml](barcode%20scanner.yaml). It sends `esphome.barcode_scanned` directly through the ESPHome API; no HTTP middleware is required.
+
+The first Home Assistant bridge is in [homeassistant/README.md](homeassistant/README.md), with the package at [homeassistant/packages/food_diary.yaml](homeassistant/packages/food_diary.yaml). The intended workflow is: tare the empty plate, scan the product, add the food, then pair the barcode with the next positive stable scale reading.
+
+This is currently only the barcode/weight hand-off. Open Food Facts lookup, manual product entry, persistent diary storage and nutrient totals are not implemented yet.
