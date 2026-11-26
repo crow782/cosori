@@ -1,0 +1,59 @@
+# Food diary bridge: barcode scanner + Cosori CNS-R101S stable weight.
+#
+# Workflow:
+# 1. Put the empty plate/container on the scale and tare it.
+# 2. Scan the product barcode.
+# 3. Add the food to the plate. When the stable weight becomes > 0 g,
+#    this package emits esphome.food_diary_weight_ready.
+#
+# The event is a hand-off point for the food-diary logic. It does not yet
+# perform Open Food Facts lookup or persist nutrition entries.
+
+input_text:
+  food_diary_pending_barcode:
+    name: Food diary pending barcode
+    max: 32
+    initial: ""
+
+automation:
+  - id: food_diary_capture_scanned_barcode
+    alias: Food diary - capture barcode
+    description: Stores the most recently scanned barcode until a stable weight arrives.
+    mode: restart
+    triggers:
+      - trigger: event
+        event_type: esphome.barcode_scanned
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ trigger.event.data.barcode is defined
+             and (trigger.event.data.barcode | string | length) > 0 }}
+    actions:
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.food_diary_pending_barcode
+        data:
+          value: "{{ trigger.event.data.barcode | string }}"
+
+  - id: food_diary_pair_barcode_with_stable_weight
+    alias: Food diary - pair barcode with stable weight
+    description: Emits one event when the scale reports a positive stable net weight for the pending barcode.
+    mode: single
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.cosori_weight_stable
+        above: 0
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ states('input_text.food_diary_pending_barcode') | length > 0 }}
+    actions:
+      - event: esphome.food_diary_weight_ready
+        event_data:
+          barcode: "{{ states('input_text.food_diary_pending_barcode') }}"
+          weight_g: "{{ states('sensor.cosori_weight_stable') | float(0) | round(0) }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.food_diary_pending_barcode
+        data:
+          value: ""
