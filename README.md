@@ -2,7 +2,7 @@
 
 Independent investigation of the **Cosori Nutrition Scale CNS-R101S** for a local BLE integration with ESP32, ESPHome and Home Assistant.
 
-> Project status: **BLE identification, connection, GATT map and first weight-correlated notification payloads confirmed; packet decoding still in progress.**
+> Project status: **BLE identification, connection, GATT map and weight field validated against three samples; robust packet decoding and ESPHome implementation in progress.**
 
 ## Hardware and software
 
@@ -111,12 +111,28 @@ The bytes at offsets 7–8 (zero-based) change from `00 00` to `14 50`. Interpre
 
 These captures establish that `0x2C12` emits changing notifications correlated with the scale load. Continue capturing this characteristic before investigating the other proprietary notification characteristics.
 
+## Third measurement sample and preliminary weight-field validation
+
+A third notification was captured on `0x1910/0x2C12` with a displayed scale reading of **1001 g**:
+
+| Scale condition | Raw notification (hex) | Bytes 7–8 | Big-endian integer | Integer / 10 |
+|---|---|---|---:|---:|
+| Unloaded (0 g) | `FE EF 00 84 D0 05 00 00 00 00 01 D6` | `00 00` | 0 | 0 g |
+| Loaded (520 g) | `FE EF 00 84 D0 05 00 14 50 00 01 3A` | `14 50` | 5200 | 520 g |
+| Loaded (1001 g) | `FE EF 00 84 D0 05 00 27 1A 00 01 17` | `27 1A` | 10010 | 1001 g |
+
+The field at zero-based byte offsets 7–8, interpreted as a big-endian unsigned 16-bit integer and divided by 10, matches all three displayed readings exactly:
+
+`weight_g = ((payload[7] << 8) | payload[8]) / 10.0`
+
+This is now a strongly supported **preliminary decoder** for the observed positive integer-weight samples. Further testing is still needed for fractional weights, negative/overload/status states, tare behavior, and packet validity. The final byte varies across samples (`D6`, `3A`, `17`); its purpose has not been identified and it must not be assumed to be a checksum without further analysis.
+
 ## Unverified protocol details
 
 The following are not yet confirmed:
 - Which notification characteristic carries live weight measurements.
 - Whether a write/initialization command is required.
-- Measurement packet format, units, sign and precision.
+- Fractional/negative/status packet behavior, packet validity checks and the role of the final byte.
 - Whether the proprietary `ffc1` / `ffc2` service is involved in weighing.
 
 Do not treat any assumed packet type or scale factor as established until raw data is captured.
