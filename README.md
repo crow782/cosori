@@ -65,10 +65,10 @@ This is a strongly supported preliminary decoder for the observed positive integ
 ## Main firmware sensors and stability
 
 The main firmware exposes two entities:
-- Cosori Weight Raw: decoded value from every valid notification, useful for diagnostics and observing fluctuations.
-- Cosori Weight Stable: publishes a new value only after the candidate weight has remained unchanged (within 0.05 g) for 2 seconds.
+- Cosori Weight Raw: decoded value from every valid notification, useful for diagnostics and observing fluctuations. It is explicitly configured with unit g, device_class weight and state_class measurement.
+- Cosori Weight Stable: publishes a new value only after the candidate weight has remained unchanged (within 0.05 g) for 2 seconds. It also declares unit g, device_class weight and state_class measurement.
 
-Use Cosori Weight Stable in Home Assistant automations that should act only after the scale settles. Keep the raw entity for troubleshooting. Two seconds is a practical starting point and can be adjusted after real-world testing.
+Use Cosori Weight Stable in Home Assistant automations that should act only after the scale settles. Keep the raw entity for troubleshooting. Two seconds is a practical starting point and can be adjusted after real-world testing. Stability tracking polls the raw sensor state from an ESPHome interval, avoiding dependence on the BLE sensor on_value automation.
 
 The firmware validates the observed packet header and minimum length before decoding. It does not send BLE writes to the scale.
 
