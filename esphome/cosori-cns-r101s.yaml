@@ -75,6 +75,10 @@ sensor:
     ble_client_id: cosori_ble
     name: "Cosori Weight Raw"
     id: cosori_weight_raw
+    unit_of_measurement: "g"
+    device_class: weight
+    state_class: measurement
+    accuracy_decimals: 1
     service_uuid: "1910"
     characteristic_uuid: "2C12"
     notify: true
@@ -107,19 +111,7 @@ sensor:
 
       ESP_LOGD("cosori", "Decoded raw=%u, weight=%.1f g", raw, weight_g);
       return weight_g;
-    on_value:
-      then:
-        - lambda: |-
-            // Reset the stability timer only when the decoded value changes.
-            if (!id(candidate_valid) ||
-                fabsf(x - id(candidate_weight_g)) > 0.05f) {
-              id(candidate_weight_g) = x;
-              id(candidate_since_ms) = millis();
-              id(candidate_valid) = true;
-              ESP_LOGD("cosori", "New candidate weight %.1f g; stability timer reset", x);
-            }
-
-  # Stable value: published only after no change for 2 seconds.
+  # Stable value: published only after no change for 2 seconds (0.05 g tolerance).
   - platform: template
     name: "Cosori Weight Stable"
     id: cosori_weight_stable
@@ -133,7 +125,19 @@ interval:
   - interval: 100ms
     then:
       - lambda: |-
-          if (!id(candidate_valid)) {
+          // Track the latest raw BLE sensor state here rather than relying on
+          // the BLE sensor's on_value automation to start the stability timer.
+          if (!id(cosori_weight_raw).has_state()) {
+            return;
+          }
+
+          const float current = id(cosori_weight_raw).state;
+          if (!id(candidate_valid) ||
+              fabsf(current - id(candidate_weight_g)) > 0.05f) {
+            id(candidate_weight_g) = current;
+            id(candidate_since_ms) = millis();
+            id(candidate_valid) = true;
+            ESP_LOGD("cosori", "Candidate %.1f g; stability timer reset", current);
             return;
           }
 
@@ -142,11 +146,10 @@ interval:
             return;
           }
 
-          const float candidate = id(candidate_weight_g);
           if (!id(cosori_weight_stable).has_state() ||
-              fabsf(candidate - id(cosori_weight_stable).state) > 0.05f) {
-            id(cosori_weight_stable).publish_state(candidate);
-            ESP_LOGI("cosori", "Stable weight published: %.1f g", candidate);
+              fabsf(current - id(cosori_weight_stable).state) > 0.05f) {
+            id(cosori_weight_stable).publish_state(current);
+            ESP_LOGI("cosori", "Stable weight published: %.1f g", current);
           }
 
 # The raw sensor is diagnostic. Use "Cosori Weight Stable" in HA automations.
