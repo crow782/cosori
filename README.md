@@ -10,7 +10,7 @@ Independent investigation of the Cosori Nutrition Scale CNS-R101S for local BLE 
 - [esphome/cosori-cns-r101s.yaml](esphome/cosori-cns-r101s.yaml): main CNS-R101S integration; connects to the configured MAC, decodes weight notifications, and exposes raw and stable weight sensors.
 - [esphome/cosori-diagnostic.yaml](esphome/cosori-diagnostic.yaml): earlier connection/GATT diagnostic configuration.
 
-All configurations require wifi_ssid, wifi_password and fallback_ap_password in ESPHome secrets.yaml. Never commit credentials or API keys.
+All configurations require wifi_ssid, wifi_password and fallback_ap_password in ESPHome secrets.yaml. The barcode scanner also requires api_encryption_key (generate it with openssl rand -base64 32). Never commit credentials or API keys.
 
 ## Finding another scale
 
