@@ -17,7 +17,7 @@ The package expects the ESPHome entities/event below:
 - Barcode scanner event: `esphome.barcode_scanned`, with `barcode`.
 - Stable scale entity: `sensor.cosori_weight_stable`.
 
-Check the actual entity ID in Home Assistant and adjust the package if you renamed the ESPHome entity.
+Check the actual entity ID in Home Assistant and adjust the package if you renamed the ESPHome entity. In the ESPHome device integration options, enable **Allow the device to perform Home Assistant actions** for the barcode scanner; otherwise it cannot fire the event.
 
 ## Operating sequence
 
