@@ -375,8 +375,9 @@ display:
 
       if (mode == "scanning") {
         it.fill(COLOR_OFF);
-        it.printf(64, 16, id(font_heading), TextAlign::TOP_CENTER, "Looking up...");
-        it.printf(64, 36, id(font_body), TextAlign::TOP_CENTER, "%s", trunc(id(last_barcode).state, 21).c_str());
+        it.printf(64, 4, id(font_heading), TextAlign::TOP_CENTER, "Scanned");
+        it.printf(64, 24, id(font_body), TextAlign::TOP_CENTER, "%s", trunc(id(last_barcode).state, 21).c_str());
+        it.printf(64, 44, id(font_body), TextAlign::TOP_CENTER, "Waiting for weight");
         return;
       }
 
@@ -386,7 +387,7 @@ display:
         auto rtype = id(last_result_type).state;
         bool is_paused = (id(last_paused).state == "1");
         if (rtype == "waiting_weight") {
-          it.printf(0, 0, id(font_icons), "\\U000F0072");  // barcode-scan
+          it.printf(0, 0, id(font_icons), "\U000F0072");  // barcode-scan
           it.printf(22, 2, id(font_heading), "Scanned");
         } else if (rtype == "added" || rtype == "added_as_note") {
           it.printf(0, 0, id(font_icons), "\U000F05E0");  // check-circle
