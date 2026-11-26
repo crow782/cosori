@@ -1,0 +1,145 @@
+# Cosori Nutrition Scale CNS-R101S - ESPHome firmware
+# Tested protocol samples:
+#   0 g    -> FE EF 00 84 D0 05 00 00 00 00 01 D6
+#   520 g  -> FE EF 00 84 D0 05 00 14 50 00 01 3A
+#   1001 g -> FE EF 00 84 D0 05 00 27 1A 00 01 17
+# Weight field: payload[7..8], unsigned big-endian, divided by 10.
+#
+# IMPORTANT: replace the MAC below when using another physical scale.
+# Keep Wi-Fi credentials in secrets.yaml; do not commit secrets.
+
+esphome:
+  name: cosori-scale
+  friendly_name: Cosori Nutrition Scale
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  logs:
+    esp32_ble_tracker: WARN
+    esp32_ble: WARN
+    esp32_ble_client: INFO
+    ble_client: INFO
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: none
+  ap:
+    ssid: "Cosori-Scale-Recovery"
+    password: !secret fallback_ap_password
+
+captive_portal:
+
+esp32_ble_tracker:
+  scan_parameters:
+    active: true
+    interval: 1100ms
+    window: 1100ms
+
+ble_client:
+  - mac_address: "C0:60:40:03:9F:6D"  # Replace for a different scale
+    id: cosori_ble
+    auto_connect: true
+    on_connect:
+      then:
+        - logger.log: "Connected to Cosori Nutrition Scale"
+    on_disconnect:
+      then:
+        - logger.log: "Cosori Nutrition Scale disconnected"
+
+globals:
+  - id: candidate_weight_g
+    type: float
+    initial_value: "0.0"
+  - id: candidate_since_ms
+    type: uint32_t
+    initial_value: "0"
+  - id: candidate_valid
+    type: bool
+    initial_value: "false"
+
+sensor:
+  # Raw decoded value: follows every valid BLE notification.
+  - platform: ble_client
+    type: characteristic
+    ble_client_id: cosori_ble
+    name: "Cosori Weight Raw"
+    id: cosori_weight_raw
+    service_uuid: "1910"
+    characteristic_uuid: "2C12"
+    notify: true
+    lambda: |-
+      if (x.size() < 9) {
+        ESP_LOGW("cosori", "Ignoring short notification: %u bytes",
+                 (unsigned) x.size());
+        return NAN;
+      }
+
+      // Validate the stable header observed in all captured scale packets.
+      if (x[0] != 0xFE || x[1] != 0xEF ||
+          x[3] != 0x84 || x[4] != 0xD0 || x[5] != 0x05) {
+        ESP_LOGW("cosori", "Ignoring unrecognized notification header");
+        return NAN;
+      }
+
+      const uint16_t raw = (static_cast<uint16_t>(x[7]) << 8) |
+                           static_cast<uint16_t>(x[8]);
+      const float weight_g = raw / 10.0f;
+
+      ESP_LOGD("cosori", "BLE payload (%u bytes), raw=%u, weight=%.1f g",
+               (unsigned) x.size(), raw, weight_g);
+      return weight_g;
+    on_value:
+      then:
+        - lambda: |-
+            // Reset the stability timer only when the decoded value changes.
+            if (!id(candidate_valid) ||
+                fabsf(x - id(candidate_weight_g)) > 0.05f) {
+              id(candidate_weight_g) = x;
+              id(candidate_since_ms) = millis();
+              id(candidate_valid) = true;
+              ESP_LOGD("cosori", "New candidate weight %.1f g; stability timer reset", x);
+            }
+
+  # Stable value: published only after no change for 2 seconds.
+  - platform: template
+    name: "Cosori Weight Stable"
+    id: cosori_weight_stable
+    unit_of_measurement: "g"
+    device_class: weight
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: never
+
+interval:
+  - interval: 100ms
+    then:
+      - lambda: |-
+          if (!id(candidate_valid)) {
+            return;
+          }
+
+          // Unsigned subtraction is safe across millis() rollover.
+          if ((uint32_t) (millis() - id(candidate_since_ms)) < 2000U) {
+            return;
+          }
+
+          const float candidate = id(candidate_weight_g);
+          if (!id(cosori_weight_stable).has_state() ||
+              fabsf(candidate - id(cosori_weight_stable).state) > 0.05f) {
+            id(cosori_weight_stable).publish_state(candidate);
+            ESP_LOGI("cosori", "Stable weight published: %.1f g", candidate);
+          }
+
+# The raw sensor is diagnostic. Use "Cosori Weight Stable" in HA automations.
+# No BLE writes are sent to the scale.
