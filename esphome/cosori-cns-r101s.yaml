@@ -45,22 +45,24 @@ wifi:
 
 captive_portal:
 
+# BLE tracker shared by the direct scale connection and the Bluetooth proxy.
+# Keep the default scan timings; aggressive continuous scanning can affect Wi-Fi stability.
 esp32_ble_tracker:
   scan_parameters:
     active: true
-    interval: 1100ms
-    window: 1100ms
+
+# Forward nearby BLE advertisements/connections to Home Assistant.
+# Two proxy slots leave capacity for the direct Cosori BLE client connection.
+bluetooth_proxy:
+  active: true
+  connection_slots: 2
 
 ble_client:
   - mac_address: "C0:60:40:03:9F:6D"  # Replace for a different scale
     id: cosori_ble
     auto_connect: true
-    on_connect:
-      then:
-        - logger.log: "Connected to Cosori Nutrition Scale"
     on_disconnect:
       then:
-        - logger.log: "Cosori Nutrition Scale disconnected"
         - lambda: |-
             id(candidate_valid) = false;
 
