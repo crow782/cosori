@@ -2,7 +2,7 @@
 
 Independent investigation of the **Cosori Nutrition Scale CNS-R101S** for a local BLE integration with ESP32, ESPHome and Home Assistant.
 
-> Project status: **BLE identification, connection and initial GATT map confirmed; measurement payload and weight decoding still in progress.**
+> Project status: **BLE identification, connection, GATT map and first weight-correlated notification payloads confirmed; packet decoding still in progress.**
 
 ## Hardware and software
 
@@ -63,7 +63,7 @@ Descriptors shown:
 
 Both characteristics show descriptors `0x2902` (Client Characteristic Configuration) and `0x2901` (Characteristic User Description).
 
-**Important:** the GATT map confirms the available properties, not which characteristic carries the weight. No notification payload has yet been captured, and no command should be written until the protocol is understood.
+**Important:** the GATT map confirms the available properties, not which characteristic carries the weight. Initial notification payloads have now been captured on `0x2C12`; see the payload section below. No command should be written until the protocol is understood.
 
 ## Work completed
 
@@ -95,6 +95,21 @@ logger:
 ```
 
 ESPHome requires component-specific log levels not to be more verbose than the global level. This filter reduces advertisement noise; it does not itself enable or guarantee a GATT characteristic dump.
+
+## First notification payloads captured on `0x1910/0x2C12`
+
+nRF Connect showed notifications enabled on the IMD Control characteristic (`0x2C12`). Two payloads were captured under different load conditions:
+
+| Scale condition | Raw notification (hex) |
+|---|---|
+| Unloaded (displayed 0 g) | `FE EF 00 84 D0 05 00 00 00 00 01 D6` |
+| Loaded (displayed 520 g) | `FE EF 00 84 D0 05 00 14 50 00 01 3A` |
+
+The bytes at offsets 7–8 (zero-based) change from `00 00` to `14 50`. Interpreted as a big-endian unsigned integer, these are 0 and 5200 respectively. Since the scale displayed 520 g in the second test, a tentative hypothesis is that this field represents tenths of a gram (raw value / 10).
+
+**This is only a preliminary hypothesis based on two samples.** More known weights are required to confirm byte order, scale factor, stability/streaming behavior and any status/tare fields. The final byte also changes (`D6` to `3A`); its role (checksum, counter or other field) is unknown.
+
+These captures establish that `0x2C12` emits changing notifications correlated with the scale load. Continue capturing this characteristic before investigating the other proprietary notification characteristics.
 
 ## Unverified protocol details
 
