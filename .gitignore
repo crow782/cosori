@@ -1,0 +1,28 @@
+# ESPHome secrets and local configuration
+secrets.yaml
+**/secrets.yaml
+.env
+.env.*
+*.env
+
+# ESPHome / PlatformIO build artifacts
+.esphome/
+**/.esphome/
+.pioenvs/
+**/.pioenvs/
+.piolibdeps/
+**/.piolibdeps/
+build/
+**/build/
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
