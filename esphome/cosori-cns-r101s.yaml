@@ -92,12 +92,20 @@ sensor:
         return NAN;
       }
 
+      std::string payload_hex;
+      char byte_hex[4];
+      for (size_t i = 0; i < x.size(); i++) {
+        snprintf(byte_hex, sizeof(byte_hex), "%02X", x[i]);
+        if (i > 0) payload_hex += " ";
+        payload_hex += byte_hex;
+      }
+      ESP_LOGD("cosori", "BLE RX: %s", payload_hex.c_str());
+
       const uint16_t raw = (static_cast<uint16_t>(x[7]) << 8) |
                            static_cast<uint16_t>(x[8]);
       const float weight_g = raw / 10.0f;
 
-      ESP_LOGD("cosori", "BLE payload (%u bytes), raw=%u, weight=%.1f g",
-               (unsigned) x.size(), raw, weight_g);
+      ESP_LOGD("cosori", "Decoded raw=%u, weight=%.1f g", raw, weight_g);
       return weight_g;
     on_value:
       then:
