@@ -197,3 +197,8 @@ The integration stores one active scanner session in the same SQLite database as
 After a Home Assistant restart or config-entry reload, an unexpired session is restored with the product resolved from the local catalogue when available. The user must tare the scale again and obtain a new stable positive weight before the portion can be saved. If the product is unknown, the barcode remains available for manual entry or Open Food Facts search. Sessions expire after 24 hours; the ordinary weight-wait timeout remains separately configurable.
 
 Saving a scanned portion and deleting its pending session happen in the same SQLite transaction. This prevents a restart between those operations from leaving a completed portion queued for a second save. Discarding and timeout also remove the persisted session. Existing database schema version 2 is migrated to version 3 automatically without deleting foods or diary entries.
+
+
+### Persistenza delle sessioni pendenti
+
+Le sessioni barcode sono conservate in SQLite con retention massima di 24 ore. Un riavvio o reload non ripristina mai il peso: richiede un nuovo zero e una nuova pesata stabile. Il timeout breve di acquisizione imposta lo stato `weight_timeout` ma non elimina il barcode pendente; la sessione resta recuperabile fino a scadenza o annullamento. Questa logica è implementata nel prototipo e non è ancora validata su Home Assistant.
