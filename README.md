@@ -2,24 +2,15 @@
 
 Independent investigation of the Cosori Nutrition Scale CNS-R101S for local BLE integration with ESP32, ESPHome and Home Assistant.
 
-> Project status: BLE identification, GATT map and weight-field decoding validated against three samples. Discovery and integration configurations have been added; compile/device validation is the next step.
+> Project status: BLE identification, GATT map and weight-field decoding validated against three samples. The main GATT integration is in place; further validation of edge cases and device behavior remains possible.
 
 ## Firmware files
 
 - [esphome/cosori-discovery.yaml](esphome/cosori-discovery.yaml): scans for a Cosori scale and logs its BLE address and advertised service UUIDs. Use this for a new physical scale.
-- [esphome/test-ble-direct-cosori.yaml](esphome/test-ble-direct-cosori.yaml): passive advertising test filtered to the known test-unit MAC; logs manufacturer and service data without connecting to the scale.
 - [esphome/cosori-cns-r101s.yaml](esphome/cosori-cns-r101s.yaml): main CNS-R101S integration; connects to the configured MAC, decodes weight notifications, and exposes raw and stable weight sensors.
 - [esphome/cosori-diagnostic.yaml](esphome/cosori-diagnostic.yaml): earlier connection/GATT diagnostic configuration.
 
 All configurations require wifi_ssid, wifi_password and fallback_ap_password in ESPHome secrets.yaml. The barcode scanner also requires api_encryption_key (generate it with openssl rand -base64 32). Never commit credentials or API keys.
-
-## Passive advertising test
-
-Flash test-ble-direct-cosori.yaml to a classic ESP32 DevKit (30-pin; ESPHome board esp32dev). It listens without a BLE client connection and filters reports to the known test-unit MAC C0:60:40:03:9F:6D.
-
-Open ESPHome logs and capture reports with the scale empty, then with approximately 100 g, 500 g and 1000 g. Compare SERVICE_DATA and MANUFACTURER payloads. If a field changes consistently with the load, it may expose the weight through advertising and could allow a passive Home Assistant integration.
-
-This test logs parsed advertising structures (service UUIDs, manufacturer data, service data and TX power). It does not capture GATT notifications. ESPHome may combine advertising and active scan-response information in the device report. A lack of changing advertising data does not by itself prove that the scale never broadcasts weight, but it would mean no weight field has been identified in the captured advertising data.
 
 ## Finding another scale
 
@@ -37,6 +28,29 @@ Copy the discovered address into mac_address in cosori-cns-r101s.yaml. Do not re
 | Advertised service UUID | 0x1910 | Confirmed |
 | GATT connection and service discovery | Successful | Confirmed |
 | Negotiated MTU | 131 | Confirmed |
+
+### Advertising and passive scanning findings
+
+A dedicated passive ESPHome scan was performed with the scale powered on, first unloaded and then with a 124 g load applied and removed. The test firmware captured the raw advertising payload and the separate scan-response payload, without opening a GATT connection.
+
+The advertising payload remained unchanged throughout the test:
+
+```
+02 01 06 03 03 10 19 0B FF 00 84 6D 9F 03 40 60 C0 02 01
+```
+
+The manufacturer-specific data was always:
+
+```
+company/UUID 0x8400
+data: 6D 9F 03 40 60 C0 02 01
+```
+
+No Service Data field was observed. When present, the scan response contained only the complete local name "COSORI Nutrition Scale"; it did not vary with the load. The raw advertising and scan-response bytes therefore showed no weight-dependent field during this test.
+
+**Conclusion:** for the tested CNS-R101S unit and the observed operating conditions, the weight was not present in the BLE advertising or scan-response data. A standard passive ESPHome BLE tracker/proxy can detect the scale and its advertised service, but cannot obtain the measured weight from these packets. This finding is based on the captured test and does not claim that every possible BLE transmission mode has been exhaustively analyzed.
+
+To read the weight, the integration must use a GATT connection and subscribe to the notification characteristic 0x2C12 in service 0x1910. The passive test firmware was temporary and has been removed from the repository after documenting its result.
 
 ## GATT map
 
@@ -79,7 +93,7 @@ The main firmware exposes two entities:
 
 Stability timing is event-driven: the raw sensor's on_value handler starts or resets the timer only when the rounded whole-gram candidate changes. A separate 100 ms interval checks whether 1.5 seconds have elapsed and publishes the stable integer-gram value. This avoids resetting the timer for sub-gram BLE fluctuations and avoids relying on polling the raw sensor to detect changes. Use Cosori Weight Stable in Home Assistant automations; keep Raw for diagnostics.
 
-The firmware validates the observed packet header and minimum length before decoding. It does not send BLE writes to the scale. The revised stability logic is committed but still requires compilation and on-device validation.
+The firmware validates the observed packet header and minimum length before decoding. It does not send BLE writes to the scale.
 
 ## Security
 
