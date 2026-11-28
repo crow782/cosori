@@ -216,6 +216,22 @@ class ScanSessionTests(unittest.TestCase):
         self.assertFalse(session.can_save)
         self.assertIsNone(session.weight_g)
 
+    def test_positive_reading_after_unavailable_requires_new_zero(self):
+        session = ScanSession("8017596008299", zero_seen=True)
+        session.food = {"id": "food-1"}
+        session.observe_weight(80, 2)
+        session.observe_weight(None, 2)
+
+        session.observe_weight(82, 2)
+
+        self.assertFalse(session.can_save)
+        self.assertFalse(session.zero_seen)
+        self.assertIsNone(session.weight_g)
+
+        session.observe_weight(0, 2)
+        session.observe_weight(82, 2)
+        self.assertTrue(session.can_save)
+
     def test_exact_zero_threshold_counts_as_zero(self):
         session = ScanSession("8017596008299", zero_seen=False)
         session.observe_weight(2, 2)
