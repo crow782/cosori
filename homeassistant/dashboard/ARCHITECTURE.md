@@ -131,7 +131,20 @@ Il registro completo dello sviluppo, il contratto dei metodi, i comandi di test 
 
 **Stato di verifica:** i test automatici sono stati aggiornati per coprire modifiche parziali e aggregazioni, incluso il cambio all'ora legale. Non sono ancora stati eseguiti. Il prototipo non deve essere considerato collaudato.
 
-## 10. Criteri di accettazione
+## 10. Integrazione Home Assistant – prototipo isolato
+
+Il primo adattatore Home Assistant è stato aggiunto esclusivamente sotto `homeassistant/prototypes/food_diary_integration/`. Non è installato e non deve essere copiato nella configurazione attiva prima della verifica.
+
+L'integrazione usa una config entry singola e prevede il database in `/config/food_diary/food_diary.db`. Le operazioni SQLite vengono eseguite nell'executor di Home Assistant. Le azioni esposte sono:
+- gestione catalogo: `add_food`, `update_food`, `delete_food`, `search_foods`, `find_food_by_barcode`;
+- diario: `add_entry`, `list_entries`, `delete_entry`;
+- statistiche: `period_summary`.
+
+Le azioni di ricerca e riepilogo usano le risposte strutturate delle azioni Home Assistant; le azioni di creazione/modifica possono restituire opzionalmente il record. Questo consente a script e automazioni di acquisire risultati senza inventare sensori per liste di oggetti. Per valori numerici persistenti da mostrare come stato, in una fase successiva verranno valutati sensori dedicati.
+
+La documentazione tecnica e gli esempi sono in `homeassistant/prototypes/food_diary_integration/README.md`. Il codice non ha ancora superato test runtime, hassfest o verifica contro la versione Core effettivamente installata. La CI compila il prototipo e controlla che la copia del livello SQLite resti identica alla versione standalone.
+
+## 11. Criteri di accettazione
 
 Prima di costruire tutta la dashboard:
 1. implementare lo scheletro dell'integrazione e lo schema SQLite;
@@ -144,7 +157,7 @@ Prima di costruire tutta la dashboard:
 
 Solo dopo questi test si definiscono le entità definitive e si realizza la dashboard Lovelace.
 
-## 11. Questioni ancora aperte
+## 12. Questioni ancora aperte
 
 - La registrazione da scansione sarà automatica o richiederà conferma? Proposta: automatica solo quando prodotto e nutrienti sono riconosciuti; altrimenti resta in sospeso per intervento.
 - Il pasto sarà suggerito in base all'ora e modificabile? Proposta: sì.
