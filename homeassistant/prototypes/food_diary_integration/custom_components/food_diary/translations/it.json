@@ -3,7 +3,17 @@
     "step": {
       "user": {
         "title": "Collega i dispositivi",
-        "description": "Seleziona il sensore di peso ESPHome e il dispositivo ESPHome che invia le scansioni barcode."
+        "description": "Seleziona il sensore di peso ESPHome e il dispositivo ESPHome che invia le scansioni barcode.",
+        "data": {
+          "weight_entity": {
+            "name": "Sensore della bilancia",
+            "description": "Scegli il sensore del peso stabile della bilancia ESPHome."
+          },
+          "scanner_device_id": {
+            "name": "Scanner barcode",
+            "description": "Scegli il dispositivo ESPHome che invia gli eventi di scansione."
+          }
+        }
       }
     },
     "abort": {
@@ -18,7 +28,45 @@
     "step": {
       "init": {
         "title": "Impostazioni Food Diary",
-        "description": "Scegli i dispositivi collegati e configura il flusso di pesata e la ricerca dei prodotti."
+        "description": "Scegli i dispositivi collegati e configura il flusso di pesata e la ricerca dei prodotti.",
+        "data": {
+          "weight_entity": {
+            "name": "Sensore della bilancia",
+            "description": "Sensore ESPHome del peso stabile usato per acquisire automaticamente le porzioni."
+          },
+          "scanner_device_id": {
+            "name": "Scanner barcode",
+            "description": "Dispositivo ESPHome da cui provengono le scansioni."
+          },
+          "default_meal": {
+            "name": "Pasto predefinito",
+            "description": "Pasto preselezionato per le nuove porzioni."
+          },
+          "auto_save": {
+            "name": "Registrazione automatica",
+            "description": "Registra un prodotto conosciuto quando viene rilevato un nuovo peso positivo stabile."
+          },
+          "weight_timeout_seconds": {
+            "name": "Timeout pesata",
+            "description": "Secondi massimi di attesa del peso stabile dopo la scansione."
+          },
+          "zero_threshold_g": {
+            "name": "Soglia dello zero",
+            "description": "I pesi uguali o inferiori a questo valore in grammi sono considerati zero."
+          },
+          "openfoodfacts_enabled": {
+            "name": "Usa Open Food Facts",
+            "description": "Cerca i barcode non presenti nel catalogo locale."
+          },
+          "openfoodfacts_country": {
+            "name": "Paese Open Food Facts",
+            "description": "Codice paese di due lettere, ad esempio it."
+          },
+          "openfoodfacts_language": {
+            "name": "Lingua dei prodotti",
+            "description": "Codice lingua usato per la ricerca, ad esempio it."
+          }
+        }
       }
     }
   },
