@@ -248,3 +248,40 @@ class FoodDiaryStoreTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PendingScanSessionPersistenceTests(unittest.TestCase):
+    def test_pending_session_survives_store_reopen(self):
+        created = "2026-11-28T10:00:00+00:00"
+        expires = "2026-11-29T10:00:00+00:00"
+        saved = self.store.save_pending_session(
+            "session-1", "8017596008299", created, expires
+        )
+        self.assertEqual(saved["barcode"], "8017596008299")
+        reopened = FoodDiaryStore(self.db_path)
+        restored = reopened.get_pending_session()
+        self.assertEqual(restored["session_id"], "session-1")
+        self.assertEqual(restored["barcode"], "8017596008299")
+        self.assertEqual(restored["created_at"], "2026-11-28T10:00:00.000000+00:00")
+        self.assertEqual(restored["expires_at"], "2026-11-29T10:00:00.000000+00:00")
+
+    def test_only_one_pending_session_and_compare_and_delete(self):
+        self.store.save_pending_session(
+            "session-1", "8017596008299",
+            "2026-11-28T10:00:00+00:00", "2026-11-29T10:00:00+00:00"
+        )
+        self.store.save_pending_session(
+            "session-2", "8017596057570",
+            "2026-11-28T10:01:00+00:00", "2026-11-29T10:01:00+00:00"
+        )
+        self.assertFalse(self.store.delete_pending_session("session-1"))
+        self.assertEqual(self.store.get_pending_session()["session_id"], "session-2")
+        self.assertTrue(self.store.delete_pending_session("session-2"))
+        self.assertIsNone(self.store.get_pending_session())
+
+    def test_pending_session_rejects_invalid_expiry(self):
+        with self.assertRaises(ValueError):
+            self.store.save_pending_session(
+                "session-1", "8017596008299",
+                "2026-11-29T10:00:00+00:00", "2026-11-28T10:00:00+00:00"
+            )
