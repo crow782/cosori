@@ -358,3 +358,9 @@ Aggiornata anche `HACS_ARCHITECTURE.md`: la sessione barcode è persistente in S
 Commit di codice di questa correzione: `428dbcc6` (coordinator), con modifiche precedenti a `acquisition.py` e `test_acquisition.py`.
 
 **Verifica ancora necessaria:** il run CI #3 verde precede queste modifiche. GitHub non ha avviato automaticamente un nuovo workflow per i commit via connettore; rilanciare manualmente `Food Diary prototype checks` sul branch `waage+scanner`. Non dichiarare ancora verdi i nuovi test. I test runtime Home Assistant e hardware restano da fare.
+
+Nota CI successiva (Run #4, 2026-11-28):
+- run #46180187991 sul commit `7fbff597436cced9132ede81bfe7bafb2a2dd49c`: success;
+- compileall, Node syntax, JSON, copie SQLite: tutti OK;
+- 22 test SQLite e 26 test acquisizione superati.
+- Dopo aver letto i log, ho aggiunto un ulteriore test esplicito: una lettura positiva successiva a `unavailable` non deve essere salvabile finché non viene osservata una nuova tara. Questo test è successivo al Run #4 e richiede una nuova esecuzione CI.
