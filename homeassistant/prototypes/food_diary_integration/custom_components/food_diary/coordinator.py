@@ -57,6 +57,11 @@ class FoodDiaryCoordinator:
         self._listeners: list[Any] = []
         self._fallback_cancel: Any = None
         self._timeout_cancel: Any = None
+        self._session_expiry_cancel: Any = None
+        self._session_id: str | None = None
+        self._session_created_at: datetime | None = None
+        self._session_expires_at: datetime | None = None
+        self._session_restored = False
         self._pending_counter_events = 0
         self._last_counter: int | None = None
         self._weight_g: float | None = None
