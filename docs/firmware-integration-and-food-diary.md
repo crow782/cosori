@@ -1,6 +1,6 @@
 # Piano di integrazione: Cosori + GM67 + Home Assistant
 
-> Stato: documento di progettazione basato sui firmware e sul package Home Assistant presenti nel branch `waage+scanner`. **Non è ancora un firmware unificato e non certifica una compilazione o una prova sul dispositivo.**
+> Stato: aggiornato con la rimozione del Bluetooth proxy, l'invio immediato del barcode, il ritorno dei dati nutrizionali al display tramite API ESPHome e il contatore kcal in Home Assistant. I firmware Cosori e scanner sono ancora configurazioni separate; **le modifiche non certificano una compilazione o una prova sul dispositivo.**
 
 ## 1. Obiettivo e hardware
 
@@ -11,7 +11,7 @@ Un unico ESP32 DevKit V1 deve gestire contemporaneamente:
 - il display OLED SSD1306 tramite I²C;
 - il pulsante fisico;
 - la connessione Wi-Fi e l'API nativa ESPHome verso Home Assistant;
-- il Bluetooth proxy ESPHome, se resta utile agli altri dispositivi BLE.
+- il collegamento BLE GATT diretto della bilancia, senza Bluetooth proxy.
 
 Home Assistant deve coordinare il diario alimentare, associare barcode e peso, interrogare Open Food Facts e conservare i dati del diario. L'ESP32 deve rimanere un nodo di acquisizione e interfaccia: niente chiamate HTTP verso servizi esterni e niente parsing nutrizionale sul microcontrollore.
 
@@ -36,7 +36,7 @@ File: `esphome/cosori-cns-r101s.yaml`
 
 - ESP-IDF, Wi-Fi con `power_save_mode: none`, API e OTA.
 - BLE tracker con scansione attiva.
-- Bluetooth proxy attivo con `connection_slots: 2`.
+- Bluetooth proxy rimosso: non serve alla connessione BLE GATT diretta della bilancia.
 - Un `ble_client` diretto verso il MAC della bilancia di test.
 - Sottoscrizione alle notifiche GATT `0x1910 / 0x2C12`.
 - Validazione dell'intestazione del pacchetto e decodifica del peso dai byte 7–8, big-endian, divisi per 10.
@@ -53,9 +53,10 @@ File: `barcode.yaml` (e copia denominata `barcode scanner.yaml`).
 - OLED SSD1306 su I²C e pulsante GPIO25.
 - Configurazione GM67 tramite comandi UART.
 - API ESPHome e OTA.
-- Attualmente esegue anche una richiesta HTTP a `http://localhost`, con header Authorization segnaposto, attende la risposta e solo dopo emette l'evento `esphome.barcode_scanned`.
+- La scansione pubblica subito l'evento `esphome.barcode_scanned` via API nativa ESPHome; non esegue richieste HTTP né parsing JSON sul microcontrollore.
+- Espone inoltre l'azione API `show_food_result`, richiamata da Home Assistant per aggiornare il display con prodotto, peso, kcal della porzione e totale progressivo.
 
-**La richiesta a localhost non deve essere trasferita nel firmware unificato.** Su ESP32, `localhost` indica l'ESP32 stesso, non Home Assistant e non il computer che ospita il middleware. Inoltre il POST e il parsing JSON aggiungono lavoro, memoria, tempi di attesa e dipendenza dalla rete proprio nel percorso di acquisizione del barcode.
+Il vecchio POST a `http://localhost` è stato rimosso: su ESP32 localhost avrebbe indicato il dispositivo stesso, non Home Assistant. Il firmware non contiene più i componenti `http_request` e `json` per il middleware.
 
 ### 2.3 Package Home Assistant esistente
 
@@ -69,7 +70,7 @@ Il package:
 - interroga Open Food Facts tramite `rest_command` da Home Assistant;
 - calcola i nutrienti della porzione a partire dai valori per 100 g.
 
-Quindi la parte HTTP verso Open Food Facts è già correttamente collocata in Home Assistant. La modifica architetturale principale è rimuovere la chiamata HTTP dal firmware barcode e inviare subito l'evento tramite l'API nativa ESPHome.
+Quindi la parte HTTP verso Open Food Facts resta in Home Assistant. Il risultato torna al display tramite un'azione personalizzata dell'API nativa ESPHome: nessun server HTTP intermedio e nessuna richiesta dal microcontrollore.
 
 Nota: il README del package indica già la sequenza tare → scansione → aggiunta alimento; questa è anche la sequenza consigliata qui sotto.
 
@@ -173,19 +174,14 @@ ESP32 classico condivide una sola risorsa radio 2,4 GHz tra Wi-Fi e Bluetooth. E
 
 Il carico HTTP e il parsing JSON sull'ESP32 sono quindi inutili: ridurli non elimina la condivisione radio, ma riduce il lavoro applicativo e le raffiche di traffico Wi-Fi.
 
-### BLE client e Bluetooth proxy
+### BLE client diretto, senza proxy
 
-La configurazione Cosori attuale mantiene:
-- un collegamento GATT diretto alla bilancia;
-- proxy attivo con due slot configurati.
-
-Non aumentare gli slot durante la prima integrazione. La documentazione ESPHome indica circa 1 KB di RAM per slot sul classico ESP32 e raccomanda di non superare cinque slot per evitare problemi di memoria/stabilità. Gli slot del proxy e il limite totale `max_connections` devono restare coerenti.
-
-Se il proxy non serve ad altri dispositivi, il test A/B più utile sarà disabilitarlo temporaneamente e confrontare stabilità BLE, memoria libera e uptime. Non disabilitare il BLE client diretto della bilancia: è indispensabile per il peso.
+- Mantenere `esp32_ble_tracker` e il client `ble_client` diretto verso la Cosori: sono necessari per la connessione GATT e le notifiche del peso.
+- Non configurare `bluetooth_proxy`: non serve né alla bilancia né allo scanner GM67 e aggiungerebbe carico e complessità senza beneficio per questo progetto.
 
 ### Scansione BLE
 
-Mantenere inizialmente i parametri di scansione predefiniti del tracker, senza impostare intervalli e finestre aggressive. La documentazione ESPHome avverte che modifiche ai parametri di scansione sui proxy Wi-Fi possono rendere instabile la connessione Wi-Fi.
+Mantenere inizialmente i parametri di scansione predefiniti del tracker, senza impostare intervalli e finestre aggressive.
 
 ### Logger e componenti
 
@@ -209,7 +205,7 @@ Sezioni da unificare:
 - `ota`: una sola configurazione OTA.
 - `wifi`: una sola configurazione, con fallback AP e captive portal.
 - `captive_portal`: una sola dichiarazione.
-- `esp32_ble_tracker`, `bluetooth_proxy`, `ble_client`: mantenere la configurazione Cosori.
+- `esp32_ble_tracker`, `ble_client`: mantenere la connessione BLE diretta Cosori; non aggiungere `bluetooth_proxy`.
 - `uart`, `i2c`, `display`, `font`, `binary_sensor`, `script`, `select`, `switch`, `number`, `text_sensor`, `sensor`, `globals`, `interval`: unire le liste e i blocchi evitando ID duplicati.
 - Rimuovere `http_request` e `json` dal firmware barcode se non rimane alcun altro uso.
 
@@ -234,7 +230,7 @@ L'ordine è intenzionale: dopo ogni fase si deve poter tornare a un firmware fun
 
 ### Fase 1 — Unificazione minima, senza proxy
 - Unire le sezioni YAML e mantenere Cosori GATT + GM67 UART + OLED + pulsante.
-- Disabilitare inizialmente il Bluetooth proxy per ridurre le variabili del test.
+- Non configurare il Bluetooth proxy.
 - Eliminare completamente HTTP/JSON dal firmware barcode.
 - Pubblicare l'evento barcode via API ESPHome.
 - Conservare il sensore Raw e Stable della bilancia.
@@ -246,11 +242,10 @@ L'ordine è intenzionale: dopo ogni fase si deve poter tornare a un firmware fun
 - Aggiungere feedback di acquisizione barcode e timeout.
 - Testare due o più prodotti in sequenza e verificare che non ci siano associazioni incrociate.
 
-### Fase 3 — Proxy opzionale
-- Riattivare `bluetooth_proxy` con due slot.
-- Ripetere i test della Fase 1 e 2.
-- Confrontare uptime, riavvii, RSSI Wi-Fi, riconnessioni BLE e disponibilità del peso.
-- Se peggiora la stabilità, valutare proxy disabilitato o un secondo ESP32 dedicato al proxy.
+### Fase 3 — Feedback nutrizionale sul display
+- Dopo la risposta Open Food Facts, Home Assistant richiama `esphome.barcode_scanner_show_food_result`.
+- Il display mostra peso, kcal della porzione e kcal cumulative.
+- Il totale aumenta solo quando è disponibile un valore energetico e può essere azzerato con `input_button.food_diary_reset_total_kcal`.
 
 ### Fase 4 — Diario persistente e interfaccia
 - Salvare ogni porzione come voce distinta, con data/ora, pasto, barcode, nome, peso e nutrienti.
@@ -268,11 +263,10 @@ La fusione è pronta per l'uso quotidiano solo se:
 - una richiesta Open Food Facts lenta/non disponibile non blocca l'acquisizione;
 - una scansione doppia o una sessione incompleta non genera una voce alimentare errata;
 - il dispositivo resta raggiungibile via API e OTA;
-- la stabilità è stata verificata anche con il proxy attivo, se lo si intende mantenere.
+- la stabilità della connessione BLE diretta è stata verificata.
 
 ## 10. Riferimenti
 
-- [ESPHome Bluetooth Proxy](https://esphome.io/components/bluetooth_proxy/): slot, dipendenza dal BLE tracker e indicazioni di stabilità.
 - [ESPHome Native API](https://esphome.io/components/api/): azione `homeassistant.event` e autorizzazione del dispositivo a eseguire azioni Home Assistant.
 - [ESP-IDF RF Coexistence (ESP32)](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/coexist.html): condivisione della radio Wi-Fi/BLE e time-division multiplexing.
 - [Home Assistant RESTful Command](https://www.home-assistant.io/integrations/rest_command/): richieste HTTP eseguite da Home Assistant e gestione della risposta con `response_variable`.
