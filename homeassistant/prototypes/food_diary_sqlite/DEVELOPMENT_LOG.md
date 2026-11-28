@@ -180,3 +180,8 @@ Le azioni di lettura restituiscono dati strutturati con il meccanismo response-d
 5. implementare sensori/aggiornamento UI, Open Food Facts e flusso Cosori/GM67 in fasi successive.
 
 La struttura usa l'attuale modello Home Assistant di registrazione delle azioni in `async_setup` e di risposte strutturate. Riferimento tecnico: documentazione ufficiale "Integration service actions" (link nel README del prototipo).
+
+
+### Verifica schema v3 — 2026-11-28
+
+La versione schema corrente è 3. La tabella `pending_sessions` è creata dallo storage e descritta in `schema.sql`. I test di inizializzazione e migrazione v1 devono aspettarsi `PRAGMA user_version = 3`; corretti i valori attesi che erano rimasti a 2 dopo l'introduzione della tabella.
