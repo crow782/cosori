@@ -1,10 +1,11 @@
 {
   "domain": "food_diary",
-  "name": "Food Diary (prototype)",
+  "name": "Food Diary",
   "version": "0.1.0",
-  "documentation": "https://github.com/crow782/cosori",
+  "documentation": "https://github.com/crow782/cosori/tree/waage%2Bscanner/homeassistant/prototypes/food_diary_integration",
+  "issue_tracker": "https://github.com/crow782/cosori/issues",
+  "codeowners": ["crow782"],
   "config_flow": true,
   "requirements": [],
-  "codeowners": [],
   "iot_class": "local_push"
 }
