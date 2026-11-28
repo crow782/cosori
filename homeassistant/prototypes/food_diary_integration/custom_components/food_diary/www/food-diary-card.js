@@ -191,7 +191,7 @@ class FoodDiaryAuroraCard extends HTMLElement {
         '<button class="ghost" data-action="discard-pending">Annulla</button></div></div>'
       : '<p class="muted">Nessuna scansione in attesa</p>';
     this.shadowRoot.innerHTML =
-      '<style>' + this._styles() + '</style><ha-card><div class="shell">' +
+      '<style>' + this._styles() + '</style><div class="card-shell"><div class="shell">' +
       '<header><div><div class="eyebrow">AURORA · FOOD DIARY</div><h1>Diario alimentare</h1>' +
       '<p>Il riepilogo dei tuoi pasti, senza trasformare i dati mancanti in zero.</p></div>' +
       '<div class="status">' + this._escape(status.state || "Connessione…") + '</div></header>' +
@@ -243,7 +243,7 @@ class FoodDiaryAuroraCard extends HTMLElement {
       '<label>Nome prodotto<input name="query" minlength="2" maxlength="100" required></label>' +
       '<button type="submit">Cerca prodotti</button></form><div id="off-results">' + this._offResultsMarkup() + '</div></details>' +
       '<footer>Food Diary · Aurora interface · Home Assistant</footer>' +
-      (this._loading ? '<div class="loading">Aggiornamento…</div>' : '') + '</div></ha-card>';
+      (this._loading ? '<div class="loading">Aggiornamento…</div>' : '') + '</div></div>';
   }
 
   _offResultsMarkup() {
@@ -257,7 +257,7 @@ class FoodDiaryAuroraCard extends HTMLElement {
   _styles() {
     return [
       ':host{display:block;color:#f3f1fa;font-family:Arial,sans-serif}',
-      'ha-card{overflow:hidden;border:1px solid rgba(139,120,213,.24);border-radius:22px;background:linear-gradient(145deg,#191a25,#20212d 55%,#191e2a);color:#f3f1fa;box-shadow:0 10px 24px rgba(0,0,0,.16)}',
+      '.card-shell{overflow:hidden;border:1px solid rgba(139,120,213,.24);border-radius:22px;background:linear-gradient(145deg,#191a25,#20212d 55%,#191e2a);color:#f3f1fa;box-shadow:0 10px 24px rgba(0,0,0,.16)}',
       '.shell{padding:clamp(13px,3vw,25px);display:grid;gap:16px}',
       'header,.section-head,.date-nav,.meal-head,.entry,.candidate{display:flex;align-items:center;justify-content:space-between;gap:12px}',
       'header{align-items:flex-start}h1{font-size:clamp(23px,4vw,32px);margin:4px 0;font-weight:650}h2{font-size:18px;margin:0}h3{font-size:15px;margin:0}p{margin:5px 0;color:#a8a8b8;font-size:13px}',
@@ -271,7 +271,7 @@ class FoodDiaryAuroraCard extends HTMLElement {
       '.meal{padding:12px 0;border-bottom:1px solid #353545}.meal:last-child{border-bottom:0}.meal-head span{font-size:11px;color:#9292a2}.entry,.candidate{padding:10px 0;border-bottom:1px solid #343443}.entry:last-child,.candidate:last-child{border-bottom:0}.entry strong,.candidate strong{display:block;font-size:13px}.entry small,.candidate small{display:block;color:#a8a8b8;font-size:11px;margin-top:4px}.delete{background:transparent;color:#aaa;font-size:20px;padding:4px 9px}',
       '.pending{padding:13px;border-radius:14px;background:rgba(217,154,91,.09);border:1px solid rgba(217,154,91,.35);display:grid;gap:5px}.pending small,.muted,.empty,.hint{color:#a8a8b8;font-size:12px}.actions{display:flex;gap:8px;margin-top:7px}',
       '.form-panel{border:1px solid #383848;border-radius:15px;background:#222330;padding:13px}.form-panel summary{cursor:pointer;font-weight:650;color:#d9d1f6;padding:4px}form{display:grid;gap:12px;padding-top:14px}label{display:grid;gap:6px;font-size:12px;color:#bcb9c9}',
-      'input,select{width:100%;box-sizing:border-box;border:1px solid #454557;border-radius:10px;background:#171822;color:#f5f2fb;padding:10px;font:inherit;min-width:0}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.nutrients{grid-template-columns:repeat(4,minmax(0,1fr)}',
+      'input,select{width:100%;box-sizing:border-box;border:1px solid #454557;border-radius:10px;background:#171822;color:#f5f2fb;padding:10px;font:inherit;min-width:0}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.nutrients{grid-template-columns:repeat(4,minmax(0,1fr))}',
       '.error{background:#572e37;color:#ffd9df;padding:11px;border-radius:10px;font-size:12px}.notice{background:#24444a;color:#c9f4f4;padding:11px;border-radius:10px;font-size:12px}footer{text-align:center;color:#777889;font-size:10px;padding:8px}.loading{text-align:center;background:#292a38;padding:7px;border-radius:9px;font-size:11px}',
       '@media(max-width:600px){.shell{padding:13px;gap:13px}.metrics{grid-template-columns:1fr 1fr}.metric.hero{grid-column:span 2}.macros{grid-template-columns:repeat(2,minmax(0,1fr))}.nutrients,.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}header{display:grid}.status{justify-self:start}}',
       '@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}'
