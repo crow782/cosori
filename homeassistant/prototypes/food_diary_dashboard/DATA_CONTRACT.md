@@ -118,7 +118,8 @@ Versione di riferimento comunicata dall'utente: Home Assistant Core 2026.11.3, S
 
 La configurazione finale sarà tramite config flow e options flow:
 - selezione del sensore peso stabile con entity selector (dominio sensor, device class weight, integrazione ESPHome);
-- selezione diretta dell'entità barcode tramite entity selector generico sul dominio `sensor`, ad esempio `sensor.barcode_scanner_last_barcode`;\n- selezione diretta del contatore scansioni tramite entity selector generico sul dominio `sensor`, ad esempio `sensor.barcode_scanner_scan_count`;
+- selezione diretta dell'entità barcode tramite entity selector generico sul dominio `sensor`, ad esempio `sensor.barcode_scanner_last_barcode`;
+- selezione diretta del contatore scansioni tramite entity selector generico sul dominio `sensor`, ad esempio `sensor.barcode_scanner_scan_count`;
 - nessun MAC BLE o UUID GATT da inserire manualmente;
 - opzioni per pasto predefinito, salvataggio automatico, timeout, soglia zero e lookup Open Food Facts.
 
