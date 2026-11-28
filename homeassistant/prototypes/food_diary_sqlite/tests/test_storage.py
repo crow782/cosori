@@ -285,3 +285,39 @@ class PendingScanSessionPersistenceTests(unittest.TestCase):
                 "session-1", "8017596008299",
                 "2026-11-29T10:00:00+00:00", "2026-11-28T10:00:00+00:00"
             )
+
+
+    def test_scanned_entry_and_pending_session_complete_atomically(self):
+        food = self.store.add_food(
+            "Yogurt", barcode="8017596008299",
+            nutrients_per_100g={"energy_kcal": 62}
+        )
+        self.store.save_pending_session(
+            "session-atomic", "8017596008299",
+            "2026-11-28T10:00:00+00:00", "2026-11-29T10:00:00+00:00"
+        )
+        entry = self.store.add_entry(
+            food["id"], 125, "snack", source="scan",
+            pending_session_id="session-atomic"
+        )
+        self.assertAlmostEqual(entry["energy_kcal"], 77.5)
+        self.assertIsNone(self.store.get_pending_session())
+        self.assertEqual(len(self.store.list_entries(
+            "2026-11-28T00:00:00+00:00", "2026-11-29T00:00:00+00:00"
+        )), 1)
+
+    def test_wrong_pending_session_id_does_not_create_entry(self):
+        food = self.store.add_food("Yogurt", barcode="8017596008299")
+        self.store.save_pending_session(
+            "session-current", "8017596008299",
+            "2026-11-28T10:00:00+00:00", "2026-11-29T10:00:00+00:00"
+        )
+        with self.assertRaises(ValueError):
+            self.store.add_entry(
+                food["id"], 125, "snack", source="scan",
+                pending_session_id="session-stale"
+            )
+        self.assertEqual(self.store.get_pending_session()["session_id"], "session-current")
+        self.assertEqual(self.store.list_entries(
+            "2026-11-28T00:00:00+00:00", "2026-11-29T00:00:00+00:00"
+        ), [])
