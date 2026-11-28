@@ -1,0 +1,10 @@
+{
+  "domain": "food_diary",
+  "name": "Food Diary (prototype)",
+  "version": "0.1.0",
+  "documentation": "https://github.com/crow782/cosori",
+  "config_flow": true,
+  "requirements": [],
+  "codeowners": [],
+  "iot_class": "local_push"
+}
