@@ -194,3 +194,14 @@ Correzione importante della correlazione eventi: l'evento ESPHome legge Last Bar
 - UI include riepiloghi day/week/month, grafico con giorni N/D distinti da giorni con kcal ignote/parziali, pasti, inserimento porzione, nuovo alimento, ricerca alternative OFF e controllo sessione scanner.
 - L'integrazione serve il file statico da /food_diary/food-diary-card.js; il manifest dichiara la dipendenza HTTP. La registrazione della risorsa Lovelace resta manuale e documentata; non si usa API interna non pubblica per auto-registrarla.
 - Esempio Lovelace aggiunto in homeassistant/prototypes/food_diary_dashboard/dashboard.yaml. Tutto resta prototipo non testato su HA Core.
+
+## Fase 16 — Persistenza sessione scanner in SQLite (2026-11-28)
+
+- Decisione utente: conservare una sessione barcode incompleta anche dopo riavvio/reload di Home Assistant.
+- Schema SQLite aggiornato a v3 con tabella pending_sessions, singolo slot attivo e scadenza a 24 ore.
+- La persistenza contiene solo ID sessione, barcode e timestamp; peso e flag zero non sono considerati validi dopo un riavvio.
+- Ripristino: risoluzione locale del barcode, richiesta di nuova tara/zero e nuova pesata positiva stabile; nessun autosalvataggio basato su peso precedente.
+- Timeout di attesa peso resta separato dalla retention massima; sessione sconosciuta può essere completata da inserimento manuale/OFF.
+- add_entry(..., pending_session_id=...) inserisce la registrazione e rimuove la sessione pendente nella stessa transazione.
+- Aggiunti test SQLite per riapertura DB, singolo slot, delete condizionale, scadenza non valida e atomicità.
+- Copie storage prototipo/integrazione sincronizzate; test CI non ancora osservati.
