@@ -35,6 +35,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 SCAN_EVENT = "esphome.barcode_scanned"
 OFF_FIELDS = "code,product_name,brands,nutrition"
+OFF_SEARCH_FIELDS = "code,product_name,brands,nutriments"
 
 
 class FoodDiaryCoordinator:
@@ -389,7 +390,7 @@ class FoodDiaryCoordinator:
                 "action": "process",
                 "json": 1,
                 "page_size": limit,
-                "fields": OFF_FIELDS,
+                "fields": OFF_SEARCH_FIELDS,
                 "cc": str(self.config.get(CONF_OFF_COUNTRY, "it")).lower(),
                 "lc": str(self.config.get(CONF_OFF_LANGUAGE, "it")).lower(),
             },
