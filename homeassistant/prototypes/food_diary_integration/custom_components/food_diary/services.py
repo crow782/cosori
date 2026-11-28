@@ -1,10 +1,12 @@
 """Home Assistant actions exposed by the experimental Food Diary integration."""
 from __future__ import annotations
 
+import asyncio
 from functools import partial
 import sqlite3
 from typing import Any
 
+import aiohttp
 import voluptuous as vol
 
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
