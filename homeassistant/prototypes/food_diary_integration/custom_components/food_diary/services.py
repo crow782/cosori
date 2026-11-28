@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from functools import partial
+import sqlite3
 from typing import Any
 
 import voluptuous as vol
@@ -28,8 +29,11 @@ def _store(hass: HomeAssistant):
 
 
 async def _run(hass: HomeAssistant, func, *args, **kwargs):
-    """Run synchronous SQLite work outside the event loop."""
-    return await hass.async_add_executor_job(partial(func, *args, **kwargs))
+    """Run synchronous SQLite work outside the event loop and normalize user errors."""
+    try:
+        return await hass.async_add_executor_job(partial(func, *args, **kwargs))
+    except (ValueError, KeyError, sqlite3.IntegrityError) as err:
+        raise ServiceValidationError(str(err)) from err
 
 
 def async_setup_services(hass: HomeAssistant) -> None:
