@@ -169,6 +169,8 @@ Serve un percorso alternativo quando non si effettua la scansione o il barcode n
 
 ## Prototipo SQLite isolato – primo avanzamento
 
+Registro di sviluppo dettagliato: [`homeassistant/prototypes/food_diary_sqlite/DEVELOPMENT_LOG.md`](../prototypes/food_diary_sqlite/DEVELOPMENT_LOG.md). Include regole di isolamento, decisioni tecniche, API del prototipo, comandi di test e stato delle verifiche.
+
 Cartella: `homeassistant/prototypes/food_diary_sqlite/`
 
 - [x] Creata una cartella di prototipo separata dai package e dai firmware originali.
