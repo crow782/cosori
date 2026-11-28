@@ -49,6 +49,18 @@ input_number:
     unit_of_measurement: g
     mode: box
     initial: 0
+  food_diary_total_kcal:
+    name: Food diary cumulative calories
+    min: 0
+    max: 100000
+    step: 0.1
+    unit_of_measurement: kcal
+    mode: box
+
+input_button:
+  food_diary_reset_total_kcal:
+    name: Reset food diary calorie total
+    icon: mdi:counter
 
 rest_command:
   food_diary_openfoodfacts_lookup:
@@ -207,7 +219,7 @@ automation:
 
   - id: food_diary_lookup_openfoodfacts
     alias: Food diary - Open Food Facts lookup
-    description: Looks up the scanned product and calculates nutrient amounts for the weighed portion.
+    description: Looks up a weighed barcode, calculates portion calories and sends the result to the scanner display.
     mode: queued
     max: 5
     triggers:
@@ -255,7 +267,7 @@ automation:
                and (off_product | length) > 0 }}
       - if:
           - condition: template
-            value_template: "{{ product_found }}"
+            value_template: "{{ product_found | bool }}"
         then:
           - variables:
               product_name: "{{ off_product.get('product_name', 'Prodotto senza nome') | string }}"
@@ -277,13 +289,26 @@ automation:
                   'fiber_g': n.get('fiber_100g') if n.get('fiber_100g') is number else none,
                   'salt_g': n.get('salt_100g') if n.get('salt_100g') is number else none
                 } | to_json }}
-              has_nutrition: >-
+              energy_kcal_100g: >-
                 {% set n = off_product.get('nutriments', {}) %}
-                {{ n.get('energy-kcal_100g') is number
-                   or n.get('energy_100g') is number
-                   or n.get('proteins_100g') is number
-                   or n.get('carbohydrates_100g') is number
-                   or n.get('fat_100g') is number }}
+                {% set kcal = n.get('energy-kcal_100g') %}
+                {% if kcal is number %}
+                  {{ kcal }}
+                {% elif n.get('energy_100g') is number %}
+                  {{ n.get('energy_100g') / 4.184 }}
+                {% else %}
+                  -1
+                {% endif %}
+              has_energy: "{{ energy_kcal_100g | float(-1) >= 0 }}"
+              portion_kcal: >-
+                {% if has_energy | bool %}
+                  {{ ((energy_kcal_100g | float(0)) * weight_g / 100) | round(1) }}
+                {% else %}
+                  0
+                {% endif %}
+              new_total_kcal: >-
+                {{ ((states('input_number.food_diary_total_kcal') | float(0))
+                    + (portion_kcal | float(0))) | round(1) }}
           - action: input_text.set_value
             target:
               entity_id: input_text.food_diary_product_name
@@ -304,22 +329,44 @@ automation:
               entity_id: input_text.food_diary_nutriments_json
             data:
               value: "{{ nutrient_json }}"
+          - action: input_number.set_value
+            target:
+              entity_id: input_number.food_diary_total_kcal
+            data:
+              value: "{{ new_total_kcal }}"
           - action: input_text.set_value
             target:
               entity_id: input_text.food_diary_lookup_status
             data:
               value: >-
-                {% if has_nutrition | bool %}
-                  Prodotto trovato - valori nutrizionali caricati
+                {% if has_energy | bool %}
+                  Prodotto trovato - calorie porzione calcolate
                 {% else %}
-                  Prodotto trovato - valori nutrizionali assenti
+                  Prodotto trovato - valori kcal assenti
                 {% endif %}
+          - action: esphome.barcode_scanner_show_food_result
+            continue_on_error: true
+            data:
+              product_name: "{{ product_name[:45] }}"
+              status_text: "{{ 'Prodotto trovato' if has_energy | bool else 'Kcal non disponibili' }}"
+              weight_g: "{{ weight_g | float(0) }}"
+              kcal: "{{ portion_kcal | float(0) }}"
+              total_kcal: "{{ new_total_kcal | float(0) }}"
+              has_kcal: "{{ has_energy | bool }}"
+              found: true
         else:
+          - variables:
+              lookup_message: >-
+                {% if (http_status | int(0)) == 404 or (off_body is mapping and off_body.get('status') == 'failure') %}
+                  Barcode non trovato
+                {% else %}
+                  Errore Open Food Facts
+                {% endif %}
           - action: input_text.set_value
             target:
               entity_id: input_text.food_diary_product_name
             data:
-              value: "Prodotto non trovato"
+              value: "{{ lookup_message | trim }}"
           - action: input_text.set_value
             target:
               entity_id: input_text.food_diary_product_brand
@@ -339,9 +386,38 @@ automation:
             target:
               entity_id: input_text.food_diary_lookup_status
             data:
-              value: >-
-                {% if (http_status | int(0)) == 404 or (off_body is mapping and off_body.get('status') == 'failure') %}
-                  Barcode assente da Open Food Facts
-                {% else %}
-                  Errore di connessione o risposta API non valida
-                {% endif %}
+              value: "{{ lookup_message | trim }}"
+          - action: esphome.barcode_scanner_show_food_result
+            continue_on_error: true
+            data:
+              product_name: "{{ lookup_message | trim }}"
+              status_text: "{{ lookup_message | trim }}"
+              weight_g: "{{ weight_g | float(0) }}"
+              kcal: 0
+              total_kcal: "{{ states('input_number.food_diary_total_kcal') | float(0) }}"
+              has_kcal: false
+              found: false
+
+  - id: food_diary_reset_total_kcal
+    alias: Food diary - reset cumulative calories
+    description: Resets the calorie accumulator and refreshes the scanner display.
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: input_button.food_diary_reset_total_kcal
+    actions:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.food_diary_total_kcal
+        data:
+          value: 0
+      - action: esphome.barcode_scanner_show_food_result
+        continue_on_error: true
+        data:
+          product_name: "Totale azzerato"
+          status_text: "Totale azzerato"
+          weight_g: 0
+          kcal: 0
+          total_kcal: 0
+          has_kcal: false
+          found: true
