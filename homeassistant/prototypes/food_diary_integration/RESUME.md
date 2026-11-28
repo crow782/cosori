@@ -313,3 +313,6 @@ Limiti residui:
 
 
 Nota di verifica: la persistenza delle sessioni è implementata sia nello storage sia nel coordinator. Non va più elencata tra i componenti mancanti; resta da aggiungere una suite di test runtime per il coordinator.
+
+
+CI dispatch note (2026-11-28): the workflow definition has also been added to the default branch `main` (commit `dfa83e924b1aae10160961aa0a67ae0f07924552`) so GitHub's manual workflow dispatch control is available. The feature branch retains the same workflow. Select `waage+scanner` as the ref when manually running it.
