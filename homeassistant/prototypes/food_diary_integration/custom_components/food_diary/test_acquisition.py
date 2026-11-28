@@ -192,8 +192,8 @@ class ScanSessionTests(unittest.TestCase):
 
         self.assertFalse(session.can_save)
         self.assertIsNone(session.weight_g)
-        self.assertTrue(session.zero_seen)
-        self.assertEqual(session.status, "waiting_for_weight")
+        self.assertFalse(session.zero_seen)
+        self.assertEqual(session.status, "waiting_for_zero")
 
     def test_negative_reading_does_not_count_as_zero_or_valid_weight(self):
         session = ScanSession("8017596008299", zero_seen=False)
