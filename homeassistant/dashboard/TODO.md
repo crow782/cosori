@@ -156,3 +156,12 @@ Serve un percorso alternativo quando non si effettua la scansione o il barcode n
 ---
 
 **Regola di lavoro:** prima definire e documentare il modello dati e i flussi; solo dopo creare la dashboard. La dashboard non deve basarsi su entità fittizie o su funzioni che il package non implementa ancora.
+
+
+## Documento tecnico aggiunto
+
+È stata preparata una proposta iniziale per la persistenza e il modello dati:
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) – proposta di integrazione custom Home Assistant con database SQLite locale, catalogo alimenti separato dal diario, snapshot nutrizionali, servizi e criteri di prova.
+
+**Stato della decisione:** proposta documentata, non ancora implementata né collaudata. Il package attuale resta invariato. Il prossimo passo è realizzare un prototipo isolato dell'integrazione e verificare persistenza, query e backup prima di collegarlo al flusso Cosori/GM67.
