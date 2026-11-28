@@ -1,4 +1,4 @@
-name: Food Diary SQLite prototype tests
+name: Food Diary prototype checks
 
 on:
   push:
@@ -11,6 +11,7 @@ on:
   pull_request:
     paths:
       - "homeassistant/prototypes/food_diary_sqlite/**"
+      - "homeassistant/prototypes/food_diary_integration/**"
       - ".github/workflows/food-diary-prototype-tests.yml"
   workflow_dispatch:
 
@@ -19,7 +20,7 @@ permissions:
 
 jobs:
   sqlite-tests:
-    name: Python ${{ matrix.python-version }} tests
+    name: Python ${{ matrix.python-version }} checks
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
