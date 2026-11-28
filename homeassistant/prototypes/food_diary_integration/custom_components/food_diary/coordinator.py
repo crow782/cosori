@@ -538,17 +538,26 @@ class FoodDiaryCoordinator:
         session = self._session
         if session is None or session.barcode != barcode:
             return
-        lookup_failed = False
         try:
             food = await self.hass.async_add_executor_job(
                 self.store.find_food_by_barcode, barcode
             )
-            if food is None and self.config.get(CONF_OFF_ENABLED, True):
+        except sqlite3.Error:
+            _LOGGER.exception("Food Diary catalogue read failed")
+            if self._session is session:
+                self.last_error = "catalog_lookup_failed"
+                self.state = "storage_error"
+                self._notify()
+            return
+
+        lookup_failed = False
+        if food is None and self.config.get(CONF_OFF_ENABLED, True):
+            try:
                 food = await self._async_lookup_openfoodfacts(barcode)
-        except (OSError, ValueError, aiohttp.ClientError, asyncio.TimeoutError) as err:
-            _LOGGER.warning("Food Diary product lookup failed: %s", err)
-            lookup_failed = True
-            food = None
+            except (OSError, ValueError, aiohttp.ClientError, asyncio.TimeoutError) as err:
+                _LOGGER.warning("Food Diary product lookup failed: %s", err)
+                lookup_failed = True
+                food = None
         if self._session is not session:
             return
         if lookup_failed:
@@ -688,9 +697,17 @@ class FoodDiaryCoordinator:
         session_id = self._session_id
         if session is None or (barcode and barcode != session.barcode):
             return
-        food = await self.hass.async_add_executor_job(
-            self.store.find_food_by_barcode, session.barcode
-        )
+        try:
+            food = await self.hass.async_add_executor_job(
+                self.store.find_food_by_barcode, session.barcode
+            )
+        except sqlite3.Error:
+            _LOGGER.exception("Food Diary catalogue lookup failed after manual insertion")
+            if self._session is session and self._session_id == session_id:
+                self.last_error = "catalog_lookup_failed"
+                self.state = "storage_error"
+                self._notify()
+            return
         # The DB lookup yields control; do not apply its result to a replacement
         # session, even if the replacement happens to use the same barcode.
         if food is not None and self._session is session and self._session_id == session_id:
