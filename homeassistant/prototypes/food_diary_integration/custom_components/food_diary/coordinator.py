@@ -589,6 +589,8 @@ class FoodDiaryCoordinator:
         )
         if food is not None and self._session is not None:
             self._session.food = food
+            self._session.status = "waiting_for_weight"
+            self.state = "waiting_for_zero" if not self._session.zero_seen else "waiting_for_weight"
             await self._async_maybe_complete()
             self._notify()
 
