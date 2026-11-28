@@ -222,7 +222,7 @@ L'ordine è intenzionale: dopo ogni fase si deve poter tornare a un firmware fun
 - Identificare il modulo montato sul DevKit V1 (WROOM-32 o altra variante).
 - Verificare revisione chip e pin UART/I²C.
 - Verificare alimentazione stabile: scanner GM67 e OLED non devono provocare cadute di tensione o reset dell'ESP32.
-- Compilare e provare separatamente il firmware scanner attuale e quello Cosori.
+- Compilare e provare il firmware integrato `esphome/cosori-barcode-integrated.yaml`.
 
 ### Fase 1 — Firmware integrato, senza proxy
 - File creato: `esphome/cosori-barcode-integrated.yaml`.
