@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from functools import partial
 from typing import Any
 
 import aiohttp
@@ -52,6 +53,8 @@ class FoodDiaryCoordinator:
         self._weight_g: float | None = None
         self._session: ScanSession | None = None
         self._lock = asyncio.Lock()
+        self._save_lock = asyncio.Lock()
+        self._saving = False
         self._stopped = False
         self.state = "initializing"
         self.last_barcode: str | None = None
@@ -101,7 +104,7 @@ class FoodDiaryCoordinator:
         self._unsubscribers.append(
             async_track_state_change_event(
                 self.hass,
-                [self.counter_entity, self.barcode_entity, self.weight_entity],
+                [self.counter_entity, self.weight_entity],
                 self._handle_state_change,
             )
         )
@@ -207,15 +210,9 @@ class FoodDiaryCoordinator:
     async def _async_accept_event_barcode(self, barcode: str) -> None:
         if self._stopped or self._pending_counter_events <= 0:
             return
-        # The current ESPHome firmware sends this event 300 ms after publishing
-        # both selected sensor states. Match it to the selected barcode entity
-        # to avoid accepting an unrelated esphome.barcode_scanned event.
-        selected = self.hass.states.get(self.barcode_entity)
-        selected_barcode = normalize_barcode(selected.state if selected else None)
-        if selected_barcode != barcode:
-            self.last_error = "barcode_event_entity_mismatch"
-            self._notify()
-            return
+        # The firmware emits one delayed event per scan with that scan's own
+        # barcode. Trust the payload: a later rapid scan may already have
+        # replaced the entity state before an earlier event is delivered.
         self._pending_counter_events -= 1
         if self._fallback_cancel:
             self._fallback_cancel()
@@ -282,7 +279,7 @@ class FoodDiaryCoordinator:
         self.hass.async_create_task(self._async_expire_session())
 
     async def _async_expire_session(self) -> None:
-        if self._session is None:
+        if self._session is None or self._session.weight_g is not None:
             return
         self._session = None
         self.last_error = "scan_session_timeout"
@@ -306,6 +303,8 @@ class FoodDiaryCoordinator:
             self._session.status = "unknown_product"
             self.state = "unknown_product"
             self.last_error = self.last_error or "product_not_found"
+            if self._session.weight_g is not None:
+                self._cancel_timeout()
         else:
             self._session.food = food
             self._session.status = "waiting_for_weight"
@@ -351,10 +350,6 @@ class FoodDiaryCoordinator:
             "fiber_g": nutriments.get("fiber_100g"),
             "salt_g": nutriments.get("salt_100g"),
         }
-        food = await self.hass.async_add_executor_job(
-            self.store.add_food,
-            name,
-        ) if False else None
         # add_food has keyword-only optional fields; keep it in a small closure
         def save_food():
             return self.store.add_food(
@@ -379,6 +374,8 @@ class FoodDiaryCoordinator:
         self._session.observe_weight(
             weight_g, float(self.config[CONF_ZERO_THRESHOLD])
         )
+        if self._session.weight_g is not None:
+            self._cancel_timeout()
         if not self._session.zero_seen:
             self.state = "waiting_for_zero"
         elif self._session.weight_g is not None:
@@ -391,6 +388,7 @@ class FoodDiaryCoordinator:
     async def _async_maybe_complete(self) -> None:
         if self._session is None or not self._session.can_save:
             return
+        self._cancel_timeout()
         if not self.config.get(CONF_AUTO_SAVE, True):
             self.state = "ready_to_save"
             return
@@ -408,34 +406,48 @@ class FoodDiaryCoordinator:
             await self._async_maybe_complete()
             self._notify()
 
-    async def async_save_pending(self) -> dict[str, Any] | None:
-        """Persist the pending portion once, preserving its product snapshot."""
-        session = self._session
-        if session is None or not session.can_save:
-            return None
+    def _cancel_timeout(self) -> None:
         if self._timeout_cancel:
             self._timeout_cancel()
             self._timeout_cancel = None
-        entry = await self.hass.async_add_executor_job(
-            self.store.add_entry,
-            session.food["id"],
-            session.weight_g,
-            self.config.get(CONF_DEFAULT_MEAL, "snack"),
-            source="scan",
-        )
-        self.last_entry = entry
-        self.state = "saved"
-        self.last_error = None
-        self._session = None
-        self._notify()
-        return entry
+
+    async def async_save_pending(self) -> dict[str, Any] | None:
+        """Persist the pending portion once, preserving its product snapshot."""
+        async with self._save_lock:
+            session = self._session
+            if session is None or not session.can_save or self._saving:
+                return None
+            self._saving = True
+            self._cancel_timeout()
+            try:
+                entry = await self.hass.async_add_executor_job(
+                    partial(
+                        self.store.add_entry,
+                        session.food["id"],
+                        session.weight_g,
+                        self.config.get(CONF_DEFAULT_MEAL, "snack"),
+                        source="scan",
+                    )
+                )
+            except Exception:
+                self.last_error = "entry_save_failed"
+                self.state = "save_error"
+                self._notify()
+                raise
+            finally:
+                self._saving = False
+            if self._session is session:
+                self.last_entry = entry
+                self.state = "saved"
+                self.last_error = None
+                self._session = None
+                self._notify()
+            return entry
 
     async def async_discard_pending(self) -> None:
         """Discard the current pending scan without writing a diary entry."""
         self._session = None
-        if self._timeout_cancel:
-            self._timeout_cancel()
-            self._timeout_cancel = None
+        self._cancel_timeout()
         self.state = "discarded"
         self.last_error = None
         self._notify()
