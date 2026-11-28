@@ -1,4 +1,4 @@
-name: Food Diary prototype checks
+name: Food Diary SQLite compatibility checks
 
 on:
   push:
@@ -43,7 +43,8 @@ jobs:
       - name: Validate integration JSON metadata
         run: |
           python -m json.tool ../food_diary_integration/custom_components/food_diary/manifest.json > /dev/null
-          python -m json.tool ../food_diary_integration/custom_components/food_diary/strings.json > /dev/null
+          python -m json.tool ../food_diary_integration/custom_components/food_diary/translations/en.json > /dev/null
+          python -m json.tool ../food_diary_integration/custom_components/food_diary/translations/it.json > /dev/null
       - name: Ensure bundled SQLite store matches standalone prototype
         run: cmp storage.py ../food_diary_integration/custom_components/food_diary/storage.py
       - name: Run unit tests
