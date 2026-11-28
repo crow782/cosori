@@ -1,0 +1,165 @@
+add_food:
+  name: Add food
+  description: Add a food to the local catalogue.
+  fields:
+    name:
+      required: true
+      example: Plain yogurt
+      selector:
+        text:
+    brand:
+      example: Example brand
+      selector:
+        text:
+    barcode:
+      example: "8000000000000"
+      selector:
+        text:
+    source:
+      default: manual
+      selector:
+        select:
+          options:
+            - manual
+            - openfoodfacts
+    nutrients_per_100g:
+      example: '{"energy_kcal": 62, "protein_g": 4.5}'
+      selector:
+        object:
+
+update_food:
+  name: Update food
+  description: Update a catalogue item. Omitted nutrient fields are preserved; null clears a value.
+  fields:
+    food_id:
+      required: true
+      selector:
+        text:
+    name:
+      selector:
+        text:
+    brand:
+      selector:
+        text:
+    barcode:
+      selector:
+        text:
+    nutrients_per_100g:
+      selector:
+        object:
+
+delete_food:
+  name: Delete food
+  description: Delete a food from the catalogue. Existing diary entries keep their snapshots.
+  fields:
+    food_id:
+      required: true
+      selector:
+        text:
+
+search_foods:
+  name: Search foods
+  description: Search the local catalogue by product name or brand.
+  fields:
+    query:
+      selector:
+        text:
+    limit:
+      default: 100
+      selector:
+        number:
+          min: 1
+          max: 500
+          mode: box
+
+find_food_by_barcode:
+  name: Find food by barcode
+  description: Find a known catalogue item by its exact barcode.
+  fields:
+    barcode:
+      required: true
+      selector:
+        text:
+
+add_entry:
+  name: Add diary entry
+  description: Save one weighed portion to the diary.
+  fields:
+    food_id:
+      required: true
+      selector:
+        text:
+    weight_g:
+      required: true
+      selector:
+        number:
+          min: 0.001
+          step: 0.1
+          unit_of_measurement: g
+          mode: box
+    meal_type:
+      required: true
+      selector:
+        select:
+          options:
+            - breakfast
+            - lunch
+            - dinner
+            - snack
+    consumed_at:
+      description: Optional ISO 8601 timestamp with UTC offset.
+      selector:
+        text:
+    source:
+      default: catalog
+      selector:
+        select:
+          options:
+            - scan
+            - catalog
+            - manual
+
+list_entries:
+  name: List diary entries
+  description: Return diary entries in a half-open ISO 8601 time range.
+  fields:
+    start:
+      required: true
+      selector:
+        text:
+    end:
+      required: true
+      selector:
+        text:
+
+delete_entry:
+  name: Delete diary entry
+  description: Delete one diary portion by its entry ID.
+  fields:
+    entry_id:
+      required: true
+      selector:
+        text:
+
+period_summary:
+  name: Get period summary
+  description: Return daily, weekly, or monthly totals in the selected IANA timezone.
+  fields:
+    period:
+      required: true
+      selector:
+        select:
+          options:
+            - day
+            - week
+            - month
+    anchor_date:
+      required: true
+      example: "2026-11-28"
+      selector:
+        date:
+    timezone:
+      required: true
+      example: Europe/Rome
+      selector:
+        text:
