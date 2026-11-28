@@ -45,3 +45,28 @@ Estendere e testare il contratto riepiloghi nel backend (coverage nutrienti e me
 - Aggiunti test per media su giorni con kcal note, giornate con kcal completamente sconosciute e copertura parziale.
 
 **Stato:** modifiche committate, ma non ancora validate da esecuzione locale o CI. Non dichiarare i test superati finché GitHub Actions non completa la matrice.
+
+
+## Fase 6 — Compatibilità Home Assistant e distribuzione HACS
+
+L'utente ha confermato l'ambiente di riferimento:
+- Home Assistant OS 18.4
+- Core 2026.11.3
+- Supervisor 2026.11.0
+- Frontend 20261028.8
+
+Decisioni:
+- puntare alla compatibilità con più release 2026, fissando la versione minima soltanto dopo una matrice di test;
+- usare config flow e options flow con selettori nativi HA;
+- selezionare il sensore ESPHome della bilancia (device class weight) e il device ESPHome dello scanner;
+- evitare inserimento manuale di MAC BLE/GATT e dipendenze esterne non necessarie;
+- distribuire integrazione e pannello Aurora in un repository HACS dedicato, separato dal repository Cosori;
+- pannello locale incluso nel pacchetto, senza CDN/framework di nicchia; fallback Lovelace nativo se il pannello non risulta compatibile.
+
+Creato `homeassistant/prototypes/food_diary_integration/HACS_ARCHITECTURE.md` con struttura repository, requisiti HACS/Marketplace, configurazione dispositivi, runtime, compatibilità e gate di rilascio.
+
+Verifica del firmware combinato: il sensore da selezionare per il peso è `Cosori Weight Stable`; il barcode è attualmente inviato come evento `esphome.barcode_scanned` con il solo campo `barcode`. Per distinguere più dispositivi, l'evento dovrà includere un identificatore stabile del nodo. Nessun firmware è stato modificato in questa fase.
+
+Nota: il prototipo config flow corrente è incompleto (schema UI non implementato) e il manifest non soddisfa ancora i requisiti di pubblicazione HACS. Il prototipo non è installabile e non va presentato come pronto.
+
+Nessun package o firmware attivo è stato modificato. Nessun test su Home Assistant reale è stato eseguito.
