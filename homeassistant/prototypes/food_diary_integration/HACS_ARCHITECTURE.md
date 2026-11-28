@@ -61,7 +61,7 @@ Il repository pubblico dedicato dovrà avere:
 - icona e brand propri, senza marchi Home Assistant;
 - workflow di validazione HACS e controlli automatici.
 
-La cartella prototipo attuale usa ancora `strings.json` e il manifest è incompleto per HACS: entrambi andranno adeguati prima della prima release.
+Il prototipo ha già le traduzioni in `translations/en.json` e `translations/it.json`. Il manifest attuale è presente, ma dovrà essere ricontrollato e completato secondo i requisiti HACS al momento della creazione del repository dedicato.
 
 ## 4. Interfaccia inclusa nell'integrazione
 
@@ -82,7 +82,7 @@ Un solo config entry locale per il diario, con Options Flow per cambiare le impo
 
 - **Bilancia:** entity selector filtrato su entità `sensor`, integrazione ESPHome e device class `weight`. L'utente sceglie il sensore di peso stabile, non inserisce MAC BLE o UUID GATT.
 - **Scanner:** entity selector generico sul dominio `sensor`; l'utente seleziona direttamente l'entità che pubblica l'ultimo barcode, ad esempio `sensor.barcode_scanner_last_barcode`. Non è richiesto un device selector né un identificatore aggiuntivo nel firmware.
-- **Barcode:** il runtime leggerà l'entità selezionata. Va verificato come il sensore rappresenta scansioni ripetute dello stesso codice: un listener basato esclusivamente sulle variazioni di stato potrebbe non ricevere un secondo aggiornamento se il valore resta identico.
+- **Barcode:** il runtime leggerà l'entità selezionata. Ascoltare gli eventi `state_changed` e valutare `state_reported` per gli aggiornamenti ripetuti senza variazione del valore. Verificare che ESPHome pubblichi ogni scansione identica; non assumere che `last_changed` cambi a ogni lettura. Se l'entità non viene aggiornata a ogni scansione, introdurre un evento dedicato o un attributo contatore nel firmware di sviluppo.
 
 Per il firmware Cosori attuale, la selezione prevista è il sensore `Cosori Weight Stable` e il device ESPHome `Cosori Food Diary`. Non usare il sensore peso raw per la registrazione automatica.
 
@@ -127,7 +127,7 @@ La versione minima Core sarà fissata dopo una matrice di test sulle release 202
 Prima della release:
 1. unit test storage e migrazioni SQLite;
 2. test config flow e options flow;
-3. test eventi scanner, identificazione device, barcode ripetuti e timeout;
+3. test listener dell'entità barcode selezionata, `state_changed`/`state_reported`, scansioni identiche, timeout e perdita/ripristino entità;
 4. test sensore peso in grammi/chilogrammi, zero, valori non validi e perdita entità;
 5. test azioni HA e risposte strutturate;
 6. test pannello con frontend HA, aggiornamento stati, errori e mobile;
