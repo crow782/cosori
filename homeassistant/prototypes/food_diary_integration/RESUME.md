@@ -100,7 +100,7 @@ Config flow:
 - selettore generico sensor per barcode;
 - selettore generico sensor per contatore scansioni;
 - validazione delle tre entità nel registry;
-- options flow per entità, pasto default, autosave, timeout, soglia zero e Open Food Facts paese/lingua/abilitazione;
+- options flow per le tre entità, pasto default, autosave, timeout, soglia zero e Open Food Facts paese/lingua/abilitazione;
 - una sola config entry.
 
 Runtime:
