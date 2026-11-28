@@ -207,7 +207,7 @@ class FoodDiaryStoreTests(unittest.TestCase):
     def test_database_schema_version_is_initialized(self):
         import sqlite3
         with sqlite3.connect(self.db_path) as db:
-            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 2)
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
 
 
     def test_schema_v1_migrates_legacy_second_precision_timestamps(self):
@@ -225,7 +225,7 @@ class FoodDiaryStoreTests(unittest.TestCase):
             db.execute("PRAGMA user_version = 1")
         reopened = FoodDiaryStore(self.db_path)
         with sqlite3.connect(self.db_path) as db:
-            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 2)
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
             stored = db.execute(
                 "SELECT consumed_at FROM entries WHERE id=?", (entry["id"],)
             ).fetchone()[0]
