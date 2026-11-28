@@ -189,3 +189,11 @@ Important scan ordering safeguard: the ESPHome event is delayed and reads the cu
 ## Aurora Lovelace card prototype
 
 The integration serves its bundled custom card at `/food_diary/food-diary-card.js`. After installing the integration, add this resource once in Settings → Dashboards → Resources, URL `/food_diary/food-diary-card.js?v=0.1.0`, type JavaScript module. Then import the example view from `homeassistant/prototypes/food_diary_dashboard/dashboard.yaml` or add a card with type `custom:food-diary-aurora`. In YAML Lovelace mode, add the same resource under `lovelace.resources` in configuration.yaml. The resource is served without authentication and contains no secrets. Automatic resource registration is intentionally not used because the documented custom-card workflow uses an explicit dashboard resource; we avoid relying on internal Lovelace resource APIs.
+
+## Durable pending scan recovery
+
+The integration stores one active scanner session in the same SQLite database as the food catalogue and diary. It records only the session ID, barcode, creation timestamp and a 24-hour expiry; it deliberately does not persist the measured weight or assume that a previous scale reading is still valid.
+
+After a Home Assistant restart or config-entry reload, an unexpired session is restored with the product resolved from the local catalogue when available. The user must tare the scale again and obtain a new stable positive weight before the portion can be saved. If the product is unknown, the barcode remains available for manual entry or Open Food Facts search. Sessions expire after 24 hours; the ordinary weight-wait timeout remains separately configurable.
+
+Saving a scanned portion and deleting its pending session happen in the same SQLite transaction. This prevents a restart between those operations from leaving a completed portion queued for a second save. Discarding and timeout also remove the persisted session. Existing database schema version 2 is migrated to version 3 automatically without deleting foods or diary entries.
