@@ -254,6 +254,10 @@
     "search_openfoodfacts": {
       "name": "Cerca alternative su Open Food Facts",
       "description": "Cerca prodotti alternativi per nome. I risultati non vengono aggiunti automaticamente al catalogo."
+    },
+    "get_dashboard_data": {
+      "name": "Carica dati dashboard",
+      "description": "Restituisce riepilogo, registrazioni e catalogo locale per la dashboard Aurora."
     }
   }
 }
