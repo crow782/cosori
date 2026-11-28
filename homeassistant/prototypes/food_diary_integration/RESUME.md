@@ -108,7 +108,7 @@ Config flow:
 - una sola config entry.
 
 Runtime presente come prototipo, da validare:
-- inizializza SQLite nel percorso futuro `<config>/food_diary/food_diary.db`;
+- inizializza SQLite nel percorso `<config>/food_diary/food_diary.db`;
 - registra azioni CRUD, riepilogo e controllo sessione pendente;
 - esegue le operazioni SQLite nell'executor;
 - coordinator con listener del contatore e del sensore peso selezionati;
@@ -123,7 +123,6 @@ Runtime presente come prototipo, da validare:
 Non ancora presenti:
 - pannello Aurora connesso al backend;
 - test di integrazione Home Assistant/config flow/servizi;
-- persistenza delle sessioni pendenti attraverso riavvii: implementata nel prototipo, da validare con test coordinator/HA.
 
 ### Storage SQLite
 
@@ -311,3 +310,6 @@ Limiti residui:
 - verificare crash tra creazione in memoria e completamento dell'INSERT SQLite;
 - verificare che una sessione sconosciuta ripristinata possa essere completata con inserimento manuale e nuova pesata;
 - verificare compatibilità runtime su Home Assistant Core 2026.11.3.
+
+
+Nota di verifica: la persistenza delle sessioni è implementata sia nello storage sia nel coordinator. Non va più elencata tra i componenti mancanti; resta da aggiungere una suite di test runtime per il coordinator.
