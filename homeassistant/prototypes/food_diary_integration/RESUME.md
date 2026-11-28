@@ -55,7 +55,7 @@ Flusso previsto:
 
 La configurazione del prototipo è entity-based:
 - **Bilancia:** selezione di un'entità sensor ESPHome con device class weight. Selezionare il sensore stabile, non il peso raw.
-- **Scanner:** selezione diretta di una generica entità sensor che espone l'ultimo barcode, ad esempio `sensor.barcode_scanner_last_barcode`.
+- **Barcode:** selezione diretta dell'entità sensor `sensor.barcode_scanner_last_barcode` o equivalente.\n- **Contatore scansioni:** selezione diretta dell'entità sensor `sensor.barcode_scanner_scan_count` o equivalente; il contatore incrementa a ogni lettura, anche se il barcode è identico.
 - Non si seleziona un device ESPHome scanner.
 - Non è richiesto un identificatore scanner nel payload.
 - Nessun firmware attivo è stato modificato.
@@ -64,16 +64,19 @@ Il firmware combinato continua anche a emettere `esphome.barcode_scanned`, ma il
 
 ### Scansioni consecutive dello stesso barcode
 
-È il punto tecnico da risolvere prima di dichiarare completo il coordinator. Home Assistant distingue:
-- `state_changed`: stato o attributi modificati;
-- `state_reported`: l'entità riporta lo stesso stato senza variazioni.
+Verifica reale comunicata dall'utente:
+- `sensor.barcode_scanner_last_barcode` mantiene l'ultimo codice e non cambia quando viene letto nuovamente lo stesso prodotto;
+- `sensor.barcode_scanner_scan_count` avanza a ogni scansione, comprese quelle ripetute;
+- la cronologia del barcode mostra il valore dell'ultimo aggiornamento, mentre il contatore registra tutte le letture.
 
-Il coordinator dovrà ascoltare l'entità selezionata su state_changed e valutare anche state_reported tramite listener con event_filter limitato all'entity_id selezionato (l'evento può essere frequente). Va verificato se il text sensor ESPHome pubblica nuovamente il valore a ogni lettura identica. Se non lo fa, servirà un evento dedicato o un contatore/attributo di scansione nel firmware di sviluppo. Non basarsi su `last_changed` come identificatore di ogni scansione.
+Decisione: usare il contatore come trigger e il sensore barcode come dato:
+1. ascoltare `state_changed` soltanto sull'entità selezionata per il contatore;
+2. a ogni aggiornamento del contatore, acquisire il valore corrente dell'entità barcode selezionata;
+3. creare una nuova sessione anche se il testo barcode è identico alla lettura precedente;
+4. verificare l'ordine di pubblicazione dei due sensori, evitando di associare il nuovo conteggio a un barcode precedente. Se necessario, differire la lettura al successivo ciclo dell'event loop o usare una breve coalescenza che non perda incrementi ravvicinati.
 
-Riferimenti ufficiali:
-- https://www.home-assistant.io/docs/configuration/events/
-- https://www.home-assistant.io/docs/configuration/state_object
-
+Non serve usare `state_reported` come trigger primario e non serve modificare il firmware attivo. `last_changed` del barcode non è un identificatore di scansione.
+ 
 ## 4. Stato del codice
 
 ### Integrazione HA prototipo
@@ -93,8 +96,8 @@ Presenti:
 
 Config flow:
 - selettore sensore peso ESPHome/device class weight;
-- selettore generico sensor per barcode;
-- validazione delle due entità nel registry;
+- selettore generico sensor per barcode;\n- selettore generico sensor per contatore scansioni;
+- validazione delle tre entità nel registry;
 - options flow per entità, pasto default, autosave, timeout, soglia zero e Open Food Facts paese/lingua/abilitazione;
 - una sola config entry.
 
@@ -106,7 +109,7 @@ Runtime:
 
 Non ancora presenti:
 - coordinator/state machine scanner-peso;
-- listener dell'entità barcode;
+- listener dell'entità contatore scansioni e lettura dell'entità barcode;
 - correlazione barcode/peso e gestione timeout/duplicati;
 - lookup Open Food Facts nel runtime dell'integrazione;
 - gestione sessione prodotto sconosciuto;
