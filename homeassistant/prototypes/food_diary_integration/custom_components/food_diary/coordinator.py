@@ -12,7 +12,12 @@ from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 
-from .acquisition import (\n    ScanSession, normalize_barcode, parse_openfoodfacts_product, parse_weight_grams,\n)
+from .acquisition import (
+    ScanSession,
+    normalize_barcode,
+    parse_openfoodfacts_product,
+    parse_weight_grams,
+)
 from .const import (
     CONF_AUTO_SAVE,
     CONF_BARCODE_ENTITY,
