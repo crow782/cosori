@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import unittest
 
-from food_diary.acquisition import ScanSession, normalize_barcode, parse_weight_grams
+from food_diary.acquisition import (\n    ScanSession, normalize_barcode, parse_openfoodfacts_product, parse_weight_grams\n)
 
 
 class BarcodeNormalizationTests(unittest.TestCase):
@@ -33,6 +33,36 @@ class WeightParsingTests(unittest.TestCase):
     def test_rejects_non_finite_and_unknown_units(self):
         self.assertIsNone(parse_weight_grams("nan", "g"))
         self.assertIsNone(parse_weight_grams("12", "lb"))
+
+
+class OpenFoodFactsParserTests(unittest.TestCase):
+    def test_preserves_unknown_nutrients_as_none(self):
+        product = parse_openfoodfacts_product(
+            {
+                "status": 1,
+                "product": {
+                    "product_name": "Plain yogurt",
+                    "brands": "Example",
+                    "nutriments": {"energy-kcal_100g": "62", "proteins_100g": "4.5"},
+                },
+            },
+            "8017596008299",
+        )
+        self.assertIsNotNone(product)
+        self.assertEqual(product["nutrients_per_100g"]["energy_kcal"], "62")
+        self.assertEqual(product["nutrients_per_100g"]["protein_g"], "4.5")
+        self.assertIsNone(product["nutrients_per_100g"]["fat_g"])
+
+    def test_converts_kj_to_kcal_when_kcal_missing(self):
+        product = parse_openfoodfacts_product(
+            {"status": 1, "product": {"product_name": "Food", "nutriments": {"energy-kj_100g": 418.4}}},
+            "8017596008299",
+        )
+        self.assertAlmostEqual(product["nutrients_per_100g"]["energy_kcal"], 100)
+
+    def test_rejects_not_found_or_missing_product_name(self):
+        self.assertIsNone(parse_openfoodfacts_product({"status": 0}, "8017596008299"))
+        self.assertIsNone(parse_openfoodfacts_product({"status": 1, "product": {}}, "8017596008299"))
 
 
 class ScanSessionTests(unittest.TestCase):
