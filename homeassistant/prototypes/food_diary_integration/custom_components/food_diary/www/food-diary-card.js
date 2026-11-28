@@ -209,8 +209,15 @@ class FoodDiaryAuroraCard extends HTMLElement {
       ? '<div class="pending"><strong>Scansione in attesa</strong><span>' +
         this._escape(status.pending_product || status.pending_barcode) + '</span><small>' +
         this._escape(status.state || "") +
-        (status.pending_weight_g ? " · " + this._number(status.pending_weight_g, 1) + " g" : "") +
-        '</small><div class="actions"><button data-action="save-pending">Registra</button>' +
+        (status.pending_weight_g != null ? " · " + this._number(status.pending_weight_g, 1) + " g" : "") +
+        '</small>' +
+        (status.pending_session_restored
+          ? '<p>Sessione recuperata dopo il riavvio: esegui una nuova tara e una nuova pesata. Scadenza: ' +
+            this._escape(status.pending_session_expires_at || "24 ore") + '</p>'
+          : '') +
+        '<div class="actions">' +
+        (status.pending_product && status.pending_weight_g != null
+          ? '<button data-action="save-pending">Registra</button>' : '') +
         '<button class="ghost" data-action="discard-pending">Annulla</button></div></div>'
       : '<p class="muted">Nessuna scansione in attesa</p>';
     this.shadowRoot.innerHTML =
