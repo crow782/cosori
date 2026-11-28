@@ -82,9 +82,9 @@ class FoodDiaryStore:
     def _initialize(self) -> None:
         with self._connect() as db:
             schema_version = int(db.execute("PRAGMA user_version").fetchone()[0])
-            if schema_version > 1:
+            if schema_version > 2:
                 raise RuntimeError(
-                    f"database schema version {schema_version} is newer than supported version 1"
+                    f"database schema version {schema_version} is newer than supported version 2"
                 )
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS foods (
@@ -130,8 +130,22 @@ class FoodDiaryStore:
                 CREATE INDEX IF NOT EXISTS idx_entries_consumed_at ON entries(consumed_at);
                 CREATE INDEX IF NOT EXISTS idx_entries_meal ON entries(meal_type);
             """)
-            if schema_version == 0:
-                db.execute("PRAGMA user_version = 1")
+            if schema_version < 2:
+                # Normalize legacy second-precision timestamps before comparing
+                # them with new microsecond-precision range boundaries.
+                rows = db.execute(
+                    "SELECT id, consumed_at FROM entries"
+                ).fetchall()
+                for row in rows:
+                    parsed = datetime.fromisoformat(row["consumed_at"])
+                    normalized = parsed.astimezone(timezone.utc).isoformat(
+                        timespec="microseconds"
+                    )
+                    db.execute(
+                        "UPDATE entries SET consumed_at=? WHERE id=?",
+                        (normalized, row["id"]),
+                    )
+                db.execute("PRAGMA user_version = 2")
 
     def add_food(
         self, name: str, *, brand: str | None = None, barcode: str | None = None,
