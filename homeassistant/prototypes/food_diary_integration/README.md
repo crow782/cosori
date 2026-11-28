@@ -83,18 +83,19 @@ as entity states. See the official [integration service actions guide](https://d
 
 The config flow now asks for:
 - an ESPHome sensor entity filtered to the weight device class;
-- an ESPHome device selected as the barcode scanner.
+- a generic Home Assistant `sensor` entity that publishes the last scanned barcode (for example `sensor.barcode_scanner_last_barcode`).
 
-The options flow allows changing both selections and configuring default meal,
+The options flow allows changing both entity selections and configuring default meal,
 automatic save, weight timeout, zero threshold, and Open Food Facts country,
-language and enablement. Device selections are checked against Home Assistant's
-entity and device registries.
+language and enablement. Both entities are validated against Home Assistant's
+entity registry.
 
-This is still not end-to-end functional: the current ESPHome firmware event
-contains only `barcode`, so it does not yet identify which ESPHome node sent
-the scan. The firmware/event contract must add a stable scanner node identifier
-before the selected scanner can be enforced at runtime. No active firmware was
-changed.
+The scanner is identified by its selected entity, not by an ESPHome device or
+event payload identifier. This avoids requiring a firmware change and allows
+other barcode readers that publish a sensor state. Runtime listening and
+repeated-identical-barcode handling still need implementation and testing: a
+state-only listener may not observe a scan when the sensor state remains
+unchanged. No active firmware was changed.
 
 ## Actions
 
@@ -136,7 +137,7 @@ files.
 
 The planned package includes the integration and its Aurora panel in one HACS
 integration repository. Setup will let the user select the ESPHome weight
-sensor and scanner device through Home Assistant selectors. It will not ask
+sensor and a generic barcode sensor entity through Home Assistant selectors. It will not ask
 for BLE MAC addresses or GATT UUIDs.
 
 See [HACS_ARCHITECTURE.md](HACS_ARCHITECTURE.md) for the repository layout,
