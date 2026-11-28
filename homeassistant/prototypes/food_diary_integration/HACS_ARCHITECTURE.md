@@ -76,7 +76,7 @@ Il pannello è una vista dell'integrazione, non un backend alternativo: tutte le
 
 ## 5. Configurazione guidata
 
-Un solo config entry locale per il diario, con Options Flow per cambiare le impostazioni dopo l'installazione.
+Un solo config entry locale per il diario, con Options Flow per cambiare le impostazioni dopo l'installazione. Il prototipo ora implementa i selettori e la validazione iniziale; il flusso non è ancora testato su Home Assistant.
 
 ### Dispositivi
 
