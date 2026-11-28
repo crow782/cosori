@@ -4,7 +4,9 @@ from __future__ import annotations
 import asyncio
 from functools import partial
 import sqlite3
+from datetime import date, datetime, time
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import aiohttp
 import voluptuous as vol
@@ -153,6 +155,26 @@ def async_setup_services(hass: HomeAssistant) -> None:
             **coordinator.attributes,
         }
 
+    async def get_dashboard_data(call: ServiceCall):
+        store = _store(hass)
+        period = call.data["period"]
+        anchor_date = call.data["anchor_date"]
+        timezone = call.data["timezone"]
+        summary = await _run(hass, store.period_summary, period, anchor_date, timezone)
+        try:
+            local_zone = ZoneInfo(timezone)
+            start = datetime.combine(
+                date.fromisoformat(summary["start_date"]), time.min, local_zone
+            )
+            end = datetime.combine(
+                date.fromisoformat(summary["end_date_exclusive"]), time.min, local_zone
+            )
+        except (ValueError, ZoneInfoNotFoundError) as err:
+            raise ServiceValidationError("Invalid dashboard date or timezone") from err
+        entries = await _run(hass, store.list_entries, start.isoformat(), end.isoformat())
+        foods = await _run(hass, store.search_foods, "", limit=500)
+        return {"summary": summary, "entries": entries, "foods": foods}
+
     async def period_summary(call: ServiceCall):
         return await _run(
             hass,
@@ -255,6 +277,15 @@ def async_setup_services(hass: HomeAssistant) -> None:
             get_status,
             SupportsResponse.ONLY,
         ),
+        "get_dashboard_data": (
+            vol.Schema({
+                vol.Required("period"): vol.In(PERIODS),
+                vol.Required("anchor_date"): cv.string,
+                vol.Required("timezone"): cv.string,
+            }),
+            get_dashboard_data,
+            SupportsResponse.ONLY,
+        ),
         "period_summary": (
             vol.Schema({
                 vol.Required("period"): vol.In(PERIODS),
@@ -289,6 +320,7 @@ def async_unload_services(hass: HomeAssistant) -> None:
         "list_entries",
         "delete_entry",
         "period_summary",
+        "get_dashboard_data",
         "save_pending",
         "discard_pending",
         "get_status",
