@@ -34,7 +34,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 SCAN_EVENT = "esphome.barcode_scanned"
-OFF_FIELDS = "code,product_name,brands,nutriments"
+OFF_FIELDS = "code,product_name,brands,nutrition"
 
 
 class FoodDiaryCoordinator:
@@ -332,12 +332,13 @@ class FoodDiaryCoordinator:
             return None
         country = str(self.config.get(CONF_OFF_COUNTRY, "it")).lower()
         language = str(self.config.get(CONF_OFF_LANGUAGE, "it")).lower()
-        url = f"https://world.openfoodfacts.org/api/v2/product/{barcode}.json"
+        url = f"https://world.openfoodfacts.org/api/v3/product/{barcode}"
         session = async_get_clientsession(self.hass)
         timeout = aiohttp.ClientTimeout(total=10)
         async with session.get(
             url,
             params={"fields": OFF_FIELDS, "cc": country, "lc": language},
+            headers={"User-Agent": "HomeAssistant-FoodDiary/0.1.0 (https://github.com/crow782/cosori)"},
             timeout=timeout,
         ) as response:
             if response.status == 404:
@@ -392,6 +393,7 @@ class FoodDiaryCoordinator:
                 "cc": str(self.config.get(CONF_OFF_COUNTRY, "it")).lower(),
                 "lc": str(self.config.get(CONF_OFF_LANGUAGE, "it")).lower(),
             },
+            headers={"User-Agent": "HomeAssistant-FoodDiary/0.1.0 (https://github.com/crow782/cosori)"},
             timeout=timeout,
         ) as response:
             response.raise_for_status()
