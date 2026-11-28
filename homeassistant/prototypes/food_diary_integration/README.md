@@ -106,6 +106,7 @@ The scanner is configured through two generic sensor entities: `sensor.barcode_s
 | `delete_food` | Delete catalogue item | None |
 | `search_foods` | Search by name/brand | Food list |
 | `find_food_by_barcode` | Exact barcode lookup | Food or null |
+| `search_openfoodfacts` | Search alternative products by text | Product candidates |
 | `add_entry` | Save a weighed portion | Optional created entry |
 | `list_entries` | Read entries in a time range | Entry list |
 | `delete_entry` | Delete one diary entry | None |
@@ -165,7 +166,7 @@ The prototype coordinator now listens to the selected scan-count sensor and the 
 
 One scan session is accepted at a time. A session requires a zero reading at or below the configured threshold after the scan, followed by a positive stable-weight reading. This protects against a non-empty scale at scan time: the first positive value is ignored until zero is observed and a later positive value arrives. The integration does not command tare; tare remains physical.
 
-Product lookup checks the local catalogue first, then Open Food Facts v2 using Home Assistant's shared aiohttp session. Missing or invalid nutrient values remain unknown. Unknown products remain pending for manual catalogue insertion using the same barcode. If a positive weight has already been captured, the timeout is cancelled while waiting for manual product entry.
+Product lookup checks the local catalogue first, then Open Food Facts v2 using Home Assistant's shared aiohttp session. A separate search_openfoodfacts action uses the legacy full-text search endpoint to return alternative candidates without inserting them automatically. Missing or invalid nutrient values remain unknown. Unknown products remain pending for manual catalogue insertion using the same barcode. If a positive weight has already been captured, the timeout is cancelled while waiting for manual product entry.
 
 When automatic save is disabled, or manual review is wanted, use food_diary.save_pending and food_diary.discard_pending. food_diary.get_status returns the acquisition state. Diagnostic sensor entities expose state, last barcode, last stable weight, scan count and pending-session attributes.
 
