@@ -111,6 +111,7 @@ The scanner is configured through two generic sensor entities: `sensor.barcode_s
 | `list_entries` | Read entries in a time range | Entry list |
 | `delete_entry` | Delete one diary entry | None |
 | `period_summary` | Day/week/month totals | Summary object |
+| `get_dashboard_data` | Period summary, entries and local catalogue | Dashboard payload |
 | `save_pending` | Save a complete pending scan session | Optional saved entry |
 | `discard_pending` | Discard the pending scan session | None |
 | `get_status` | Read acquisition status and diagnostics | Status object |
@@ -183,3 +184,8 @@ Open Food Facts compatibility note: barcode lookup uses the current v3 product A
 
 
 Important scan ordering safeguard: the ESPHome event is delayed and reads the current Last Barcode value when it fires; it is not an immutable snapshot of the original scan. The coordinator therefore accepts an event only when exactly one scan-counter increment is pending and the event barcode matches the selected Last Barcode entity. If a second increment overlaps, the sequence is marked ambiguous and nothing is auto-saved.
+
+
+## Aurora Lovelace card prototype
+
+The integration serves its bundled custom card at `/food_diary/food-diary-card.js`. After installing the integration, add this resource once in Settings → Dashboards → Resources, URL `/food_diary/food-diary-card.js?v=0.1.0`, type JavaScript module. Then import the example view from `homeassistant/prototypes/food_diary_dashboard/dashboard.yaml` or add a card with type `custom:food-diary-aurora`. In YAML Lovelace mode, add the same resource under `lovelace.resources` in configuration.yaml. The resource is served without authentication and contains no secrets. Automatic resource registration is intentionally not used because the documented custom-card workflow uses an explicit dashboard resource; we avoid relying on internal Lovelace resource APIs.
