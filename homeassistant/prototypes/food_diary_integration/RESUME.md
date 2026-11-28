@@ -223,7 +223,7 @@ Sono stati aggiunti:
 - test_acquisition.py: test standard-library per barcode, unità peso, baseline zero e parser OFF;
 - workflow CI esteso ai test acquisition.
 
-Dettaglio firmware accertato leggendo esphome/cosori-barcode-integrated.yaml: su ogni valore di barcode_raw, ESPHome incrementa e pubblica scan_count, poi pubblica last_barcode, quindi dopo 300 ms invia esphome.barcode_scanned con il barcode. Il coordinatore usa il contatore come guardia e il payload evento come codice della specifica scansione; per scanner generici senza evento usa fallback a 800 ms solo se è arrivato un singolo incremento. Più incrementi senza eventi corrispondenti sono marcati ambigui e non vengono salvati automaticamente.
+Dettaglio firmware accertato leggendo esphome/cosori-barcode-integrated.yaml: su ogni valore di barcode_raw, ESPHome incrementa e pubblica scan_count, poi pubblica last_barcode, quindi dopo 300 ms invia esphome.barcode_scanned con il barcode. Il coordinatore usa il contatore come guardia e il payload evento come conferma solo se esiste un unico incremento pendente e coincide con Last Barcode; per scanner generici senza evento usa fallback a 800 ms solo se è arrivato un singolo incremento. Più incrementi senza eventi corrispondenti sono marcati ambigui e non vengono salvati automaticamente.
 
 Limiti noti:
 - il coordinator non è ancora testato dentro HA Core;
@@ -234,3 +234,6 @@ Limiti noti:
 - il firmware attivo non è stato modificato.
 
 Open Food Facts API decision (2026-11-28): barcode lookup migrated to current v3 product API and parser reads the v3 aggregated nutrition structure only when it is per 100 g. The alternative text search still uses the legacy full-text endpoint, because the official docs state that full-text search is not available in v2/v3. A custom User-Agent is sent. See the official API docs linked in the development notes.
+
+
+Race safeguard: the firmware event lambda reads the current Last Barcode after its 300 ms delay. It may not preserve the first code if another scan occurs during that delay. The coordinator now accepts only one pending counter increment and requires the event barcode to match the selected barcode entity. More than one overlapping increment is rejected as ambiguous; no guess-based autosave.
