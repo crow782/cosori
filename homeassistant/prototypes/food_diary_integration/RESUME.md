@@ -251,6 +251,7 @@ Ultimo aggiornamento tecnico: il parser del contatore è stato estratto in una f
 
 ```bash
 python -m compileall -q homeassistant/prototypes/food_diary_integration/custom_components/food_diary homeassistant/prototypes/food_diary_sqlite
+node --check homeassistant/prototypes/food_diary_integration/custom_components/food_diary/www/food-diary-card.js
 PYTHONPATH=homeassistant/prototypes/food_diary_integration/custom_components python -m unittest discover -s homeassistant/prototypes/food_diary_integration/custom_components/food_diary -p 'test_*.py' -v
 PYTHONPATH=homeassistant/prototypes/food_diary_sqlite python -m unittest discover -s homeassistant/prototypes/food_diary_sqlite/tests -v
 cmp homeassistant/prototypes/food_diary_sqlite/storage.py homeassistant/prototypes/food_diary_integration/custom_components/food_diary/storage.py
