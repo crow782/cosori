@@ -55,3 +55,12 @@ jobs:
           python -m unittest discover \
             -s homeassistant/prototypes/food_diary_sqlite/tests \
             -v
+
+      - name: Run acquisition unit tests
+        env:
+          PYTHONPATH: homeassistant/prototypes/food_diary_integration/custom_components
+        run: |
+          python -m unittest discover \
+            -s homeassistant/prototypes/food_diary_integration/custom_components/food_diary \
+            -p 'test_*.py' \
+            -v
