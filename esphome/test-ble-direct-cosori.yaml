@@ -59,7 +59,7 @@ esp32_ble_tracker:
 
             for (auto uuid : x.get_service_uuids()) {
               ESP_LOGI("cosori_ble_test", "Advertised service UUID: %s",
-                       uuid.to_string().c_str());
+                       uuid.to_str().c_str());
             }
 
             // Manufacturer-specific advertising data.
@@ -74,7 +74,7 @@ esp32_ble_tracker:
               }
               ESP_LOGI("cosori_ble_test",
                        "MANUFACTURER uuid/company=%s len=%u data=[%s]",
-                       item.uuid.to_string().c_str(),
+                       item.uuid.to_str().c_str(),
                        (unsigned)item.data.size(), hex);
             }
 
@@ -90,7 +90,7 @@ esp32_ble_tracker:
               }
               ESP_LOGI("cosori_ble_test",
                        "SERVICE_DATA uuid=%s len=%u data=[%s]",
-                       item.uuid.to_string().c_str(),
+                       item.uuid.to_str().c_str(),
                        (unsigned)item.data.size(), hex);
             }
 
