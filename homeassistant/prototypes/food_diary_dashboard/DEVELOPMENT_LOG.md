@@ -154,7 +154,7 @@ Nessuna modifica al firmware attivo. La modifica del config flow resta prototipa
 
 Implementati nel prototipo:
 - acquisition.py: parsing barcode e pesi, normalizzazione g/kg/mg, sessione con gate zero→peso positivo, parser OFF con valori nutrienti ignoti mantenuti NULL;
-- coordinator.py: listener selettivo su scan counter e weight stable; ascolto evento esphome.barcode_scanned; lookup catalogo locale e OFF v2; autosave con protezione concorrenza; timeout; sessione sconosciuta; fallback scanner generici;
+- coordinator.py: listener selettivo su scan counter e weight stable; ascolto evento esphome.barcode_scanned; lookup catalogo locale e OFF v3; autosave con protezione concorrenza; timeout; sessione sconosciuta; fallback scanner generici;
 - sensor.py: entità diagnostiche stato, ultimo barcode, ultimo peso stabile e scan count;
 - servizi save_pending, discard_pending, get_status;
 - callback su add_food e update_food per risolvere una sessione sconosciuta;
@@ -168,3 +168,8 @@ Limiti: non eseguito alcun test dentro Home Assistant Core; non è disponibile u
 ## Fase 12 — Ricerca alternativa Open Food Facts (2026-11-28)
 
 Aggiunta l'azione search_openfoodfacts per ricerca testuale di prodotti alternativi quando il barcode non restituisce un risultato. La ricerca usa l'endpoint legacy full-text di Open Food Facts; i risultati sono normalizzati con lo stesso parser dei dati nutrizionali, non vengono inseriti automaticamente nel catalogo e devono essere selezionati/aggiunti esplicitamente dall'utente. Limite massimo 50 risultati, query 2–100 caratteri, timeout HTTP 12 secondi, paese/lingua configurati.
+
+
+## Fase 13 — Migrazione Open Food Facts API corrente (2026-11-28)
+
+Il lookup per barcode è stato spostato dall'API v2 deprecata alla API v3 corrente. Il parser ora supporta la struttura nutrition.aggregated_set.nutrients, usa i valori computati quando disponibili e accetta i nutrienti solo se il set è per 100 g; valori per 100 ml non vengono reinterpretati come per 100 g. La ricerca testuale alternativa resta sull'endpoint legacy full-text perché la documentazione ufficiale indica che la ricerca testuale completa non è disponibile nelle API v2/v3. È stato aggiunto un User-Agent identificativo per le richieste.
