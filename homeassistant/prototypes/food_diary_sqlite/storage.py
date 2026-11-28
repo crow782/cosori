@@ -38,7 +38,7 @@ def _timestamp(value: str | datetime | None) -> str:
     parsed = datetime.fromisoformat(value) if isinstance(value, str) else value
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise ValueError("consumed_at must include a timezone/UTC offset")
-    return parsed.isoformat(timespec="seconds")
+    return parsed.astimezone(timezone.utc).isoformat(timespec="seconds")
 
 
 def _optional_text(value: Any) -> str | None:
