@@ -16,6 +16,12 @@ class FoodDiaryAuroraCard extends HTMLElement {
     this._lastSignature = null;
     this.shadowRoot.addEventListener("click", (event) => this._onClick(event));
     this.shadowRoot.addEventListener("submit", (event) => this._onSubmit(event));
+    this.shadowRoot.addEventListener("toggle", (event) => {
+      if (event.target instanceof HTMLDetailsElement && !event.target.open && this._refreshPending) {
+        this._refreshPending = false;
+        this._refresh();
+      }
+    }, true);
   }
 
   setConfig(config) {
