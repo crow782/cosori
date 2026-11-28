@@ -166,7 +166,34 @@ class FoodDiaryStoreTests(unittest.TestCase):
     def test_database_schema_version_is_initialized(self):
         import sqlite3
         with sqlite3.connect(self.db_path) as db:
-            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 1)
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 2)
+
+
+    def test_schema_v1_migrates_legacy_second_precision_timestamps(self):
+        import sqlite3
+        food = self.store.add_food("Caffè")
+        entry = self.store.add_entry(
+            food["id"], 100, "breakfast",
+            consumed_at="2026-11-28T08:00:00+01:00",
+        )
+        with sqlite3.connect(self.db_path) as db:
+            db.execute(
+                "UPDATE entries SET consumed_at=? WHERE id=?",
+                ("2026-11-28T07:00:00+00:00", entry["id"]),
+            )
+            db.execute("PRAGMA user_version = 1")
+        reopened = FoodDiaryStore(self.db_path)
+        with sqlite3.connect(self.db_path) as db:
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 2)
+            stored = db.execute(
+                "SELECT consumed_at FROM entries WHERE id=?", (entry["id"],)
+            ).fetchone()[0]
+        self.assertEqual(stored, "2026-11-28T07:00:00.000000+00:00")
+        rows = reopened.list_entries(
+            "2026-11-28T08:00:00+01:00",
+            "2026-11-28T09:00:00+01:00",
+        )
+        self.assertEqual(len(rows), 1)
 
     def test_anchor_date_rejects_datetime(self):
         with self.assertRaises(ValueError):
