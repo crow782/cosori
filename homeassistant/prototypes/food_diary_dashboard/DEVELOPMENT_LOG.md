@@ -176,3 +176,12 @@ Il lookup per barcode è stato spostato dall'API v2 deprecata alla API v3 corren
 
 
 Correzione importante della correlazione eventi: l'evento ESPHome legge Last Barcode al momento dell'invio dopo 300 ms, quindi non è uno snapshot immutabile del barcode originario. Il coordinator è stato reso fail-safe: accetta soltanto un incremento contatore pendente alla volta e solo se il payload coincide con l'entità barcode selezionata; se più incrementi si sovrappongono, li marca ambigui e non salva.
+
+
+## Fase 14 — Hardening counter e lifecycle (2026-11-28)
+
+- Estratta la classificazione delle transizioni del contatore in una funzione pura: baseline, incremento, burst, reset e valore invalido.
+- Il coordinator azzera i trigger pendenti su contatore invalido/reset; se si sovrappongono più incrementi prima della conferma evento, marca la sequenza ambigua e non salva.
+- Il payload ESPHome viene accettato soltanto con un incremento pendente e se coincide con l'entità Last Barcode selezionata; l'evento ritardato non viene trattato come snapshot immutabile.
+- Aggiunta pulizia del coordinator e dei servizi se il setup dell'integrazione o della piattaforma sensori fallisce.
+- Test unitari estesi per transizioni del contatore.
