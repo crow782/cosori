@@ -197,12 +197,23 @@ class FoodDiaryCoordinator:
         if increment <= 0:
             return
         self._pending_counter_events += increment
+        if self._pending_counter_events > 1:
+            # The firmware's delayed event reads the current Last Barcode
+            # value, not a per-scan snapshot. If multiple increments overlap,
+            # exact barcode-to-counter correlation is no longer provable.
+            self._pending_counter_events = 0
+            if self._fallback_cancel:
+                self._fallback_cancel()
+                self._fallback_cancel = None
+            self.last_error = "multiple_scans_before_previous_scan_resolved"
+            self.state = "scan_sequence_ambiguous"
+            self._notify()
+            return
         self.state = "scan_event_pending"
         if self._fallback_cancel:
             self._fallback_cancel()
-        delay = 0.8
         self._fallback_cancel = async_call_later(
-            self.hass, delay, self._async_fallback_scan
+            self.hass, 0.8, self._async_fallback_scan
         )
         self._notify()
 
@@ -219,27 +230,23 @@ class FoodDiaryCoordinator:
     async def _async_accept_event_barcode(self, barcode: str) -> None:
         if self._stopped or self._pending_counter_events <= 0:
             return
-        # The firmware emits one delayed event per scan with that scan's own
-        # barcode. With only one pending increment, also verify the selected
-        # last-barcode entity to reject unrelated or stale global ESPHome events.
-        # With multiple pending increments, the event payload is authoritative:
-        # the entity may already contain a later scan's barcode.
-        if self._pending_counter_events == 1:
-            selected = self.hass.states.get(self.barcode_entity)
-            selected_barcode = normalize_barcode(selected.state if selected else None)
-            if selected_barcode != barcode:
-                self.last_error = "barcode_event_entity_mismatch"
-                self._notify()
-                return
-        self._pending_counter_events -= 1
+        # The firmware emits this event after a delay and reads Last Barcode
+        # at event time; it is not a guaranteed per-scan snapshot. Accept it
+        # only when exactly one counter increment is pending and it matches
+        # the selected entity. Bursts are rejected earlier as ambiguous.
+        if self._pending_counter_events != 1:
+            return
+        selected = self.hass.states.get(self.barcode_entity)
+        selected_barcode = normalize_barcode(selected.state if selected else None)
+        if selected_barcode != barcode:
+            self.last_error = "barcode_event_entity_mismatch"
+            self._notify()
+            return
+        self._pending_counter_events = 0
         if self._fallback_cancel:
             self._fallback_cancel()
             self._fallback_cancel = None
         await self._async_begin_scan(barcode)
-        if self._pending_counter_events:
-            self._fallback_cancel = async_call_later(
-                self.hass, 0.8, self._async_fallback_scan
-            )
 
     @callback
     def _async_fallback_scan(self, _now) -> None:
