@@ -10,6 +10,7 @@ Validare il livello di persistenza prima di scrivere l'integrazione Home Assista
 
 - `storage.py`: archivio SQLite, catalogo alimenti e diario delle porzioni.
 - `schema.sql`: schema leggibile del database (lo storage applica lo stesso schema all'inizializzazione).
+- `DEVELOPMENT_LOG.md`: registro delle fasi, delle scelte e dei controlli.
 - `tests/test_storage.py`: test automatici senza dipendenze esterne.
 - `DEVELOPMENT_LOG.md`: registro delle decisioni, delle modifiche e dello stato dei test.
 
@@ -28,11 +29,11 @@ I test usano un database temporaneo e non scrivono nella configurazione Home Ass
 - `foods`: catalogo alimenti, barcode univoco se presente, nutrienti per 100 g; valori sconosciuti memorizzati come SQL NULL.
 - `entries`: singole porzioni consumate con pasto, data/ora ISO 8601, origine e snapshot di nome, marca e nutrienti. Modificare un alimento nel catalogo non cambia le registrazioni precedenti.
 
-I pasti ammessi sono `breakfast`, `lunch`, `dinner`, `snack`. Le date devono includere un offset UTC per evitare timestamp ambigui. I timestamp vengono normalizzati in UTC.
+I pasti ammessi sono `breakfast`, `lunch`, `dinner`, `snack`. Le date devono includere un offset UTC per evitare timestamp ambigui. I timestamp vengono normalizzati in UTC preservando la precisione al microsecondo. Il database usa `PRAGMA user_version` (versione schema 1); versioni future non riconosciute vengono rifiutate invece di essere aperte silenziosamente.
 
 ## Riepiloghi temporali
 
-Il metodo `period_summary(period, anchor_date, timezone_name)` supporta `day`, `week` e `month`. Restituisce il totale del periodo e le righe giornaliere, con subtotali per pasto. La settimana inizia lunedì. `timezone_name` è un identificatore IANA, ad esempio `Europe/Rome`; i confini del periodo sono calcolati nel fuso locale e convertiti in UTC per la query. In questo modo sono gestiti anche i giorni di 23 o 25 ore dovuti all'ora legale.
+Il metodo `period_summary(period, anchor_date, timezone_name)` supporta `day`, `week` e `month`. `anchor_date` accetta una data (non un datetime). Restituisce il totale del periodo e le righe giornaliere, con subtotali per pasto. La settimana inizia lunedì. `timezone_name` è un identificatore IANA, ad esempio `Europe/Rome`; i confini del periodo sono calcolati nel fuso locale e convertiti in UTC per la query. In questo modo sono gestiti anche i giorni di 23 o 25 ore dovuti all'ora legale.
 
 I nutrienti vengono sommati solo quando noti: se tutte le voci hanno un determinato nutriente sconosciuto, il totale resta `null` (`None` in Python), non zero. Le statistiche settimanali e mensili includono `days_with_entries`, così i giorni senza registrazioni non vengono confusi con giorni a zero calorie.
 
