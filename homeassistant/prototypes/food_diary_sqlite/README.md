@@ -29,7 +29,7 @@ I test usano un database temporaneo e non scrivono nella configurazione Home Ass
 - `foods`: catalogo alimenti, barcode univoco se presente, nutrienti per 100 g; valori sconosciuti memorizzati come SQL NULL.
 - `entries`: singole porzioni consumate con pasto, data/ora ISO 8601, origine e snapshot di nome, marca e nutrienti. Modificare un alimento nel catalogo non cambia le registrazioni precedenti.
 
-I pasti ammessi sono `breakfast`, `lunch`, `dinner`, `snack`. Le date devono includere un offset UTC per evitare timestamp ambigui. I timestamp vengono normalizzati in UTC preservando la precisione al microsecondo. Il database usa `PRAGMA user_version` (versione schema 1); versioni future non riconosciute vengono rifiutate invece di essere aperte silenziosamente.
+I pasti ammessi sono `breakfast`, `lunch`, `dinner`, `snack`. Le date devono includere un offset UTC per evitare timestamp ambigui. I timestamp vengono normalizzati in UTC preservando la precisione al microsecondo. Il database usa `PRAGMA user_version` (versione schema 2); all'apertura viene applicata la migrazione dalla versione 1, che normalizza i timestamp preesistenti alla precisione uniforme. Versioni future non riconosciute vengono rifiutate invece di essere aperte silenziosamente.
 
 ## Riepiloghi temporali
 
