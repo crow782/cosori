@@ -299,6 +299,20 @@ class FoodDiaryStore:
             totals[key] = sum(known) if known else None
         return totals
 
+    @staticmethod
+    def _nutrient_coverage(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+        """Describe known and missing values without treating NULL as zero."""
+        coverage: dict[str, dict[str, Any]] = {}
+        for key in NUTRIENTS:
+            known_count = sum(row[key] is not None for row in rows)
+            missing_count = len(rows) - known_count
+            coverage[key] = {
+                "known_entries": known_count,
+                "missing_entries": missing_count,
+                "complete": bool(rows) and missing_count == 0,
+            }
+        return coverage
+
     def period_summary(
         self, period: str, anchor_date: str | date, timezone_name: str
     ) -> dict[str, Any]:
@@ -364,9 +378,15 @@ class FoodDiaryStore:
                 "date": day_key,
                 "entry_count": len(day_entries),
                 "totals": self._sum_nutrients(day_entries),
+                "nutrient_coverage": self._nutrient_coverage(day_entries),
                 "by_meal": by_meal,
             })
 
+        energy_days = [
+            day["totals"]["energy_kcal"]
+            for day in by_day
+            if day["totals"]["energy_kcal"] is not None
+        ]
         return {
             "period": period,
             "timezone": timezone_name,
@@ -374,7 +394,14 @@ class FoodDiaryStore:
             "end_date_exclusive": last_day.isoformat(),
             "entry_count": len(entries),
             "days_with_entries": len(by_day),
+            "days_with_energy_data": len(energy_days),
+            "average_days_count": len(energy_days),
+            "average_daily_energy_kcal": (
+                round(sum(energy_days) / len(energy_days), 2)
+                if energy_days else None
+            ),
             "totals": self._sum_nutrients(entries),
+            "nutrient_coverage": self._nutrient_coverage(entries),
             "by_day": by_day,
         }
 
