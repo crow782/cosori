@@ -204,3 +204,19 @@ def async_setup_services(hass: HomeAssistant) -> None:
             schema=schema,
             supports_response=response_mode,
         )
+
+
+def async_unload_services(hass: HomeAssistant) -> None:
+    """Unregister Food Diary actions when the config entry is unloaded."""
+    for service_name in (
+        "add_food",
+        "update_food",
+        "delete_food",
+        "search_foods",
+        "find_food_by_barcode",
+        "add_entry",
+        "list_entries",
+        "delete_entry",
+        "period_summary",
+    ):
+        hass.services.async_remove(DOMAIN, service_name)
