@@ -6,7 +6,7 @@ Independent investigation of the Cosori Nutrition Scale CNS-R101S for local BLE 
 
 ## Combined firmware and food diary plan
 
-- [Firmware integration and food diary workflow](docs/firmware-integration-and-food-diary.md): hardware compatibility, current firmware observations, recommended tare/scan/weigh sequence, Home Assistant HTTP offload, stability constraints and phased implementation plan.
+- [Firmware integration and food diary workflow](docs/firmware-integration-and-food-diary.md): hardware compatibility, direct BLE connection without proxy, immediate barcode events, nutritional feedback to the OLED and cumulative calorie handling.
 
 ## Firmware files
 
@@ -107,7 +107,7 @@ The firmware validates the observed packet header and minimum length before deco
 
 ## Barcode scanner and food diary
 
-The optional GM67 barcode scanner firmware is in [barcode scanner.yaml](barcode%20scanner.yaml). **Current implementation note:** the scanner configuration still contains an HTTP request to `http://localhost` before it emits `esphome.barcode_scanned`; this is not the intended final architecture and `localhost` on the ESP32 does not refer to Home Assistant. The integration plan documents the recommended change: emit the barcode event immediately over the ESPHome API and let Home Assistant handle Open Food Facts HTTP requests.
+The optional GM67 barcode scanner firmware is in [barcode scanner.yaml](barcode%20scanner.yaml). The scanner emits `esphome.barcode_scanned` immediately through the ESPHome API; it no longer performs HTTP requests or JSON parsing. Home Assistant handles Open Food Facts and calls the scanner's `show_food_result` API action to display product, weight, portion kcal and cumulative kcal. The Cosori firmware keeps the direct BLE GATT client and does not enable Bluetooth proxy.
 
 The first Home Assistant bridge is in [homeassistant/README.md](homeassistant/README.md), with the package at [homeassistant/packages/food_diary.yaml](homeassistant/packages/food_diary.yaml). The intended workflow is: tare the empty plate, scan the product, add the food, then pair the barcode with the next positive stable scale reading.
 
