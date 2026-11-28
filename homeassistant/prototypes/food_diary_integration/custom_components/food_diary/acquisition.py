@@ -81,23 +81,55 @@ class ScanSession:
 def parse_openfoodfacts_product(
     payload: Mapping[str, Any], barcode: str
 ) -> dict[str, Any] | None:
-    """Convert an Open Food Facts v2 response into the local food schema.
+    """Convert Open Food Facts v1/v3 product data to the local food schema.
 
-    Missing nutrient values remain None. Energy is normalized to kcal/100 g.
+    The barcode lookup uses current API v3 nutrition data. The legacy full-text
+    search endpoint still returns the older flat nutriments structure.
+    Missing/invalid values remain None; v3 values are accepted only per 100 g.
     """
-    if payload.get("status") != 1:
+    status = payload.get("status")
+    success = status == 1 or (
+        isinstance(status, str) and status.startswith("success")
+    )
+    if not success:
         return None
     product = payload.get("product") or {}
     name = str(product.get("product_name") or "").strip()
     if not name:
         return None
+
     nutriments = product.get("nutriments") or {}
+    if not nutriments:
+        nutrition = product.get("nutrition") or {}
+        aggregate = nutrition.get("aggregated_set") or {}
+        if aggregate.get("per") in {"100g", "100 g"}:
+            values = aggregate.get("nutrients") or {}
+
+            def v3_value(key: str):
+                item = values.get(key)
+                if isinstance(item, Mapping):
+                    return item.get("value_computed", item.get("value"))
+                return item
+
+            nutriments = {
+                "energy-kcal_100g": v3_value("energy-kcal"),
+                "energy-kj_100g": v3_value("energy-kj"),
+                "proteins_100g": v3_value("proteins"),
+                "carbohydrates_100g": v3_value("carbohydrates"),
+                "sugars_100g": v3_value("sugars"),
+                "fat_100g": v3_value("fat"),
+                "saturated-fat_100g": v3_value("saturated-fat"),
+                "fiber_100g": v3_value("fiber"),
+                "salt_100g": v3_value("salt"),
+            }
+
     energy = nutriments.get("energy-kcal_100g")
-    if energy is None and nutriments.get("energy-kj_100g") is not None:
+    if energy in (None, "") and nutriments.get("energy-kj_100g") not in (None, ""):
         try:
             energy = float(nutriments["energy-kj_100g"]) / 4.184
         except (TypeError, ValueError):
             energy = None
+
     def optional_number(raw: Any) -> float | None:
         if raw is None or raw == "":
             return None
@@ -120,7 +152,7 @@ def parse_openfoodfacts_product(
     return {
         "name": name,
         "brand": product.get("brands"),
-        "barcode": barcode,
+        "barcode": barcode or str(product.get("code") or ""),
         "nutrients_per_100g": nutrients,
         "source": "openfoodfacts",
     }
