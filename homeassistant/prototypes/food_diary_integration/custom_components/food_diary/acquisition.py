@@ -108,7 +108,7 @@ def parse_openfoodfacts_product(
             def v3_value(key: str):
                 item = values.get(key)
                 if isinstance(item, Mapping):
-                    return item.get("value_computed", item.get("value"))
+                    return item.get("value_computed") if item.get("value_computed") is not None else item.get("value")
                 return item
 
             nutriments = {
