@@ -12,7 +12,7 @@ Aggiunto `flows.html` con tre aree di progettazione:
 - form separato per creare una scheda alimento, con barcode e nutrienti facoltativi;
 - storico dimostrativo a 7 giorni/mese, totali, media e riepilogo per giorno.
 
-Le azioni di salvataggio non persistono dati: mostrano un messaggio esplicito che ricorda che si tratta di un prototipo. Questo evita di confondere una demo con un'integrazione funzionante.
+Le azioni di salvataggio non persistono dati: mostrano un messaggio esplicito che ricorda che si tratta di un prototipo.
 
 ## Scelte UX fissate
 - Il prodotto (catalogo) e la porzione consumata (diario) sono entità distinte.
@@ -20,7 +20,11 @@ Le azioni di salvataggio non persistono dati: mostrano un messaggio esplicito ch
 - Il peso è espresso in grammi; energia in kcal.
 - Nutrienti mancanti rimangono non disponibili e non vengono convertiti in zero.
 - La settimana inizia lunedì; il fuso definitivo sarà quello configurato in Home Assistant.
-- La media e il trattamento dei giorni senza dati restano decisioni da confermare.
+- **Giorni senza registrazioni:** rappresentati come "nessun dato", non come zero kcal.
+- **Media giornaliera:** calcolata solo sui giorni con almeno una registrazione.
+- **Totale periodo:** somma di tutte le registrazioni nell'intervallo.
+- Nei grafici i giorni senza dati devono avere una rappresentazione distinta da un giorno con registrazioni e totale zero.
+- Nessun obiettivo calorico viene presunto o mostrato se non configurato.
 
 ## Verifiche
 - File HTML e CSS scritti senza librerie esterne.
@@ -29,4 +33,4 @@ Le azioni di salvataggio non persistono dati: mostrano un messaggio esplicito ch
 - Nessun file in `homeassistant/packages/` o `esphome/` è stato modificato.
 
 ## Prossimo passo
-Rivedere i flussi con l'utente, poi definire il contratto tra UI e servizi dell'integrazione sperimentale. Solo dopo i test backend si potrà costruire la dashboard Lovelace effettiva.
+Definire il contratto tra UI e servizi dell'integrazione sperimentale, poi verificare backend e rendering. Solo dopo i test backend si potrà costruire la dashboard Lovelace effettiva.
