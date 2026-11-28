@@ -6,6 +6,7 @@ DOMAIN: Final = "food_diary"
 
 CONF_WEIGHT_ENTITY: Final = "weight_entity"
 CONF_BARCODE_ENTITY: Final = "barcode_entity"
+CONF_SCAN_COUNT_ENTITY: Final = "scan_count_entity"
 
 CONF_DEFAULT_MEAL: Final = "default_meal"
 CONF_AUTO_SAVE: Final = "auto_save"
