@@ -376,3 +376,26 @@ Revisione del coordinatore dopo CI Run #5:
 Commit: `33d282729079299c8ae706047384a309a65fbb8c`.
 
 La modifica è pubblicata ma non ancora verificata dalla CI. I test attuali non esercitano il coordinatore HA né questa concorrenza; prossimo lavoro: introdurre un test harness per coordinator con fake Home Assistant o ambiente pytest-homeassistant-custom-component, poi estendere la CI. Non dichiarare questo caso testato fino a quando il test non viene eseguito.
+
+
+## Coordinator: concorrenza e recupero — aggiornamento successivo a CI Run #5
+
+Modifiche pubblicate sul branch `waage+scanner`:
+- le ricerche prodotto e gli aggiornamenti catalogo sono associati all'identità della sessione che li ha avviati; una risposta asincrona tardiva non può aggiornare una nuova sessione che usa lo stesso barcode;
+- gli errori di lookup di una sessione ormai superata non contaminano lo stato della sessione corrente;
+- l'annullamento elimina prima la riga SQLite e solo dopo pulisce la sessione in memoria; se SQLite fallisce, barcode e sessione restano disponibili per il recupero;
+- il salvataggio verifica nuovamente la scadenza delle 24 ore dentro `_save_lock`: una sessione già scaduta non viene salvata anche se il callback di scadenza è in coda;
+- se la persistenza iniziale fallisce, viene tentata la pulizia dell'eventuale record parzialmente creato.
+
+È stata aggiunta `test_coordinator.py` con un fake Home Assistant minimale per coprire:
+- ripristino senza riutilizzare peso o tara precedenti;
+- doppio evento barcode identico consumato una sola volta;
+- burst di incrementi del contatore rifiutato come ambiguo;
+- due richieste di salvataggio simultanee con una sola registrazione;
+- errore SQLite durante discard e scadenza, mantenendo la sessione recuperabile;
+- blocco del salvataggio dopo la scadenza;
+- lookup catalogo tardivo che non aggiorna una sessione sostitutiva.
+
+Il fake HA verifica l'orchestrazione del coordinatore, non sostituisce i test di integrazione con Home Assistant Core 2026.11.3. La nuova suite non è ancora stata eseguita da GitHub Actions: avviare manualmente `Food Diary prototype checks` selezionando il branch `waage+scanner`. Non usare "Re-run all jobs" sul vecchio run #5: serve una nuova esecuzione sul commit più recente.
+
+Restano da verificare in ambiente HA reale/fisico: eventi e tempi reali ESPHome, config flow/options flow, setup/unload, API dei servizi, frontend, migrazione e recupero dopo crash. Nessuna modifica è stata fatta al firmware attivo o ai package HA attivi.
