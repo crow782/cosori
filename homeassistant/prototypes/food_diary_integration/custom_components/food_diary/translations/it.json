@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Collega i sensori",
-        "description": "Seleziona il sensore di peso ESPHome e l'entità sensor che pubblica il barcode del lettore.",
+        "description": "Seleziona il sensore peso ESPHome, il sensore dell'ultimo barcode e il contatore che avanza a ogni scansione.",
         "data": {
           "weight_entity": {
             "name": "Sensore della bilancia",
@@ -12,6 +12,10 @@
           "barcode_entity": {
             "name": "Entità barcode",
             "description": "Scegli il sensore che contiene l'ultimo barcode letto, ad esempio sensor.barcode_scanner_last_barcode."
+          },
+          "scan_count_entity": {
+            "name": "Contatore scansioni",
+            "description": "Sensore che incrementa a ogni scansione, anche quando il barcode è identico al precedente. Esempio: sensor.barcode_scanner_scan_count."
           }
         }
       }
@@ -21,7 +25,8 @@
     },
     "error": {
       "invalid_weight_entity": "Seleziona un sensore di peso registrato tramite ESPHome.",
-      "invalid_barcode_entity": "Seleziona un'entità sensore barcode registrata in Home Assistant."
+      "invalid_barcode_entity": "Seleziona un'entità sensore barcode registrata in Home Assistant.",
+      "invalid_scan_count_entity": "Seleziona un'entità sensore registrata in Home Assistant per il contatore scansioni."
     }
   },
   "options": {
@@ -65,6 +70,10 @@
           "barcode_entity": {
             "name": "Entità barcode",
             "description": "Sensore che pubblica l'ultimo barcode letto dal GM67 o da un altro lettore."
+          },
+          "scan_count_entity": {
+            "name": "Contatore scansioni",
+            "description": "Sensore usato come trigger per ogni nuova lettura, comprese scansioni ripetute dello stesso barcode."
           }
         }
       }
