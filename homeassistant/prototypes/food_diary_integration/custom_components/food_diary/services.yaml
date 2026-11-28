@@ -163,3 +163,18 @@ period_summary:
       example: Europe/Rome
       selector:
         text:
+
+save_pending:
+  name: Save pending portion
+  description: Save the current scan session after a known product and stable weight are available.
+  fields: {}
+
+discard_pending:
+  name: Discard pending scan
+  description: Discard the current scan session without saving a diary entry.
+  fields: {}
+
+get_status:
+  name: Get acquisition status
+  description: Return the current scanner and weighing state.
+  fields: {}
