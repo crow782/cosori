@@ -165,7 +165,7 @@ is promoted out of the prototypes area.
 
 ## Acquisition runtime prototype
 
-The prototype coordinator now listens to the selected scan-count sensor and the selected stable-weight sensor. It also listens for the current ESPHome event esphome.barcode_scanned. The current firmware increments the counter, publishes Last Barcode, then emits a delayed event that reads the current Last Barcode value at event time. The counter gates the event; its payload preserves the exact barcode even if another scan updates the last-value sensor before the previous event is handled.
+The prototype coordinator now listens to the selected scan-count sensor and the selected stable-weight sensor. It also listens for the current ESPHome event esphome.barcode_scanned. The current firmware increments the counter, publishes Last Barcode, then emits a delayed event that reads the current Last Barcode value at event time. The counter gates the event; because the event reads the entity at send time, it is accepted only when one increment is pending and its value matches the selected barcode sensor.
 
 One scan session is accepted at a time. A session requires a zero reading at or below the configured threshold after the scan, followed by a positive stable-weight reading. This protects against a non-empty scale at scan time: the first positive value is ignored until zero is observed and a later positive value arrives. The integration does not command tare; tare remains physical.
 
