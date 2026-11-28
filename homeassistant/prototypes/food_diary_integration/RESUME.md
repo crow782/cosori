@@ -316,3 +316,20 @@ Nota di verifica: la persistenza delle sessioni è implementata sia nello storag
 
 
 CI dispatch note (2026-11-28): the workflow definition has also been added to the default branch `main` (commit `dfa83e924b1aae10160961aa0a67ae0f07924552`) so GitHub's manual workflow dispatch control is available. The feature branch retains the same workflow. Select `waage+scanner` as the ref when manually running it.
+
+
+## CI run #46178929795 — analisi e correzione (2026-11-28)
+
+Esecuzione su commit `40621c9051227e81b1c0c51957cee4eb84e49bec`:
+- compileall Python: OK;
+- node --check card Aurora: OK;
+- JSON manifest/traduzioni: OK;
+- cmp copie storage: OK;
+- SQLite: 17 test passati, 5 errori;
+- acquisition: saltato perché il passo precedente è fallito.
+
+Causa unica dei cinque errori: `PendingScanSessionPersistenceTests` non definiva `setUp`, quindi `self.store` e `self.db_path` non esistevano. Corretto aggiungendo `setUp` con database temporaneo dedicato e `tearDown` per cleanup.
+
+Correzione commit: `fca1e59589dd06d4601b5f848e5e97bbfb77e971`.
+
+La correzione è stata riletta su GitHub. Non è ancora disponibile una nuova run associata al commit di correzione: occorre rilanciare manualmente il workflow sul branch `waage+scanner`. Non dichiarare la CI verde finché il nuovo run non termina con successo.
