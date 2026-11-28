@@ -329,3 +329,72 @@ class PendingScanSessionPersistenceTests(unittest.TestCase):
         self.assertEqual(self.store.list_entries(
             "2026-11-28T00:00:00+00:00", "2026-11-29T00:00:00+00:00"
         ), [])
+
+
+
+class PendingScanAtomicRollbackTests(unittest.TestCase):
+    """Prove a failed half of the save transaction cannot lose either side."""
+
+    def setUp(self):
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.db_path = Path(self.tempdir.name) / "atomic-rollback.db"
+        self.store = FoodDiaryStore(self.db_path)
+        self.food = self.store.add_food(
+            "Yogurt", barcode="8017596008299",
+            nutrients_per_100g={"energy_kcal": 62},
+        )
+        self.store.save_pending_session(
+            "session-atomic", "8017596008299",
+            "2026-11-28T10:00:00+00:00", "2026-11-29T10:00:00+00:00",
+        )
+
+    def tearDown(self):
+        self.tempdir.cleanup()
+
+    def _entries(self):
+        return self.store.list_entries(
+            "2026-11-28T00:00:00+00:00",
+            "2026-11-29T00:00:00+00:00",
+        )
+
+    def test_pending_delete_failure_rolls_back_inserted_entry(self):
+        import sqlite3
+
+        with sqlite3.connect(self.db_path) as db:
+            db.execute("""
+                CREATE TRIGGER reject_pending_delete
+                BEFORE DELETE ON pending_sessions
+                BEGIN SELECT RAISE(ABORT, 'forced pending delete failure'); END
+            """)
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.store.add_entry(
+                self.food["id"], 125, "snack", source="scan",
+                pending_session_id="session-atomic",
+            )
+
+        self.assertEqual(self._entries(), [])
+        self.assertEqual(
+            self.store.get_pending_session()["session_id"], "session-atomic"
+        )
+
+    def test_entry_insert_failure_keeps_pending_session(self):
+        import sqlite3
+
+        with sqlite3.connect(self.db_path) as db:
+            db.execute("""
+                CREATE TRIGGER reject_entry_insert
+                BEFORE INSERT ON entries
+                BEGIN SELECT RAISE(ABORT, 'forced entry insert failure'); END
+            """)
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.store.add_entry(
+                self.food["id"], 125, "snack", source="scan",
+                pending_session_id="session-atomic",
+            )
+
+        self.assertEqual(self._entries(), [])
+        self.assertEqual(
+            self.store.get_pending_session()["session_id"], "session-atomic"
+        )
