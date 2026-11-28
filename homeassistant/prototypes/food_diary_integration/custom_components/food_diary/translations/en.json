@@ -249,6 +249,10 @@
     "get_status": {
       "name": "Get acquisition status",
       "description": "Return the current scanner and weighing state."
+    },
+    "search_openfoodfacts": {
+      "name": "Search Open Food Facts alternatives",
+      "description": "Search alternative products by name. Results are not added to the catalogue automatically."
     }
   }
 }
