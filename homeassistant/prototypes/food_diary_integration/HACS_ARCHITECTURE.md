@@ -81,8 +81,8 @@ Un solo config entry locale per il diario, con Options Flow per cambiare le impo
 ### Dispositivi
 
 - **Bilancia:** entity selector filtrato su entità `sensor`, integrazione ESPHome e device class `weight`. L'utente sceglie il sensore di peso stabile, non inserisce MAC BLE o UUID GATT.
-- **Scanner:** device selector filtrato su dispositivi ESPHome. L'evento barcode dovrà contenere un identificatore stabile del nodo, ricavabile e verificabile rispetto al device registry.
-- **Barcode:** l'evento `esphome.barcode_scanned` porta il codice e l'identificatore dello scanner. Il firmware attuale invia solo `barcode`: l'aggiunta dell'identificatore è un requisito di compatibilità da implementare e testare prima dell'automazione multi-device.
+- **Scanner:** entity selector generico sul dominio `sensor`; l'utente seleziona direttamente l'entità che pubblica l'ultimo barcode, ad esempio `sensor.barcode_scanner_last_barcode`. Non è richiesto un device selector né un identificatore aggiuntivo nel firmware.
+- **Barcode:** il runtime leggerà l'entità selezionata. Va verificato come il sensore rappresenta scansioni ripetute dello stesso codice: un listener basato esclusivamente sulle variazioni di stato potrebbe non ricevere un secondo aggiornamento se il valore resta identico.
 
 Per il firmware Cosori attuale, la selezione prevista è il sensore `Cosori Weight Stable` e il device ESPHome `Cosori Food Diary`. Non usare il sensore peso raw per la registrazione automatica.
 
@@ -94,7 +94,7 @@ Per il firmware Cosori attuale, la selezione prevista è il sensore `Cosori Weig
 - lookup Open Food Facts abilitabile/disabilitabile;
 - preferenze paese/lingua per la ricerca;
 - comportamento quando il barcode non esiste: inserimento manuale o scelta alternativa;
-- selezione di un diverso sensore o dispositivo senza reinstallare l'integrazione.
+- selezione di un diverso sensore peso o sensore barcode senza reinstallare l'integrazione.
 
 La tara resta fisica: l'integrazione non deve inviare comandi BLE di tara alla Cosori, perché il protocollo verificato finora non la supporta.
 
