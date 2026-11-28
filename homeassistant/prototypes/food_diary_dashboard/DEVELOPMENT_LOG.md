@@ -164,3 +164,7 @@ Implementati nel prototipo:
 Comportamento firmware letto nel repository: barcode_raw incrementa e pubblica scan_count, poi pubblica last_barcode, poi dopo 300 ms emette l'evento con il barcode specifico. L'evento è il payload più affidabile per le scansioni ravvicinate; il contatore è la guardia. Il fallback per scanner generici è consentito solo per un incremento pendente.
 
 Limiti: non eseguito alcun test dentro Home Assistant Core; non è disponibile un risultato GitHub Actions completato da attestare; sessione pendente in RAM, non ripristinata dopo riavvio; un prodotto alla volta; scansione successiva durante sessione aperta rifiutata; nessuna modifica al firmware attivo o package HA attivi.
+
+## Fase 12 — Ricerca alternativa Open Food Facts (2026-11-28)
+
+Aggiunta l'azione search_openfoodfacts per ricerca testuale di prodotti alternativi quando il barcode non restituisce un risultato. La ricerca usa l'endpoint legacy full-text di Open Food Facts; i risultati sono normalizzati con lo stesso parser dei dati nutrizionali, non vengono inseriti automaticamente nel catalogo e devono essere selezionati/aggiunti esplicitamente dall'utente. Limite massimo 50 risultati, query 2–100 caratteri, timeout HTTP 12 secondi, paese/lingua configurati.
