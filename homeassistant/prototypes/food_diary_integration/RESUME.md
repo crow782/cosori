@@ -237,3 +237,9 @@ Open Food Facts API decision (2026-11-28): barcode lookup migrated to current v3
 
 
 Race safeguard: the firmware event lambda reads the current Last Barcode after its 300 ms delay. It may not preserve the first code if another scan occurs during that delay. The coordinator now accepts only one pending counter increment and requires the event barcode to match the selected barcode entity. More than one overlapping increment is rejected as ambiguous; no guess-based autosave.
+
+
+Riferimenti API ufficiali Open Food Facts consultati:
+- Product lookup v3: https://openfoodfacts.github.io/documentation/docs/Product-Opener/v3/products/get-api-v3-product-code/
+- Search full-text legacy: https://openfoodfacts.github.io/documentation/docs/Product-Opener/v2/search/get-search/
+- Panoramica versioni API e stato v2/v3: https://openfoodfacts.github.io/openfoodfacts-server/api/
