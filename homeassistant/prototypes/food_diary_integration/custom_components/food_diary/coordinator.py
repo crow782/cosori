@@ -216,8 +216,17 @@ class FoodDiaryCoordinator:
         if self._stopped or self._pending_counter_events <= 0:
             return
         # The firmware emits one delayed event per scan with that scan's own
-        # barcode. Trust the payload: a later rapid scan may already have
-        # replaced the entity state before an earlier event is delivered.
+        # barcode. With only one pending increment, also verify the selected
+        # last-barcode entity to reject unrelated or stale global ESPHome events.
+        # With multiple pending increments, the event payload is authoritative:
+        # the entity may already contain a later scan's barcode.
+        if self._pending_counter_events == 1:
+            selected = self.hass.states.get(self.barcode_entity)
+            selected_barcode = normalize_barcode(selected.state if selected else None)
+            if selected_barcode != barcode:
+                self.last_error = "barcode_event_entity_mismatch"
+                self._notify()
+                return
         self._pending_counter_events -= 1
         if self._fallback_cancel:
             self._fallback_cancel()
@@ -435,8 +444,11 @@ class FoodDiaryCoordinator:
 
     async def async_discard_pending(self) -> None:
         """Discard the current pending scan without writing a diary entry."""
-        self._session = None
-        self._cancel_timeout()
-        self.state = "discarded"
-        self.last_error = None
-        self._notify()
+        async with self._save_lock:
+            if self._session is None:
+                return
+            self._session = None
+            self._cancel_timeout()
+            self.state = "discarded"
+            self.last_error = None
+            self._notify()
