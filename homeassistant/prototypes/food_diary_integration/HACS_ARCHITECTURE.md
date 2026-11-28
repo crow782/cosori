@@ -132,3 +132,12 @@ Nessuna versione sarà marcata stabile finché questi controlli non saranno supe
 ## 9. Nota specifica per Home Assistant 2026.11.3
 
 L'installazione utente prevista è Marketplace integrato. La pubblicazione del repository continua a seguire i requisiti del catalogo HACS/Marketplace. La vecchia custom integration `hacs` non va installata né aggiunta come dipendenza dell'integrazione Food Diary.
+
+
+## Runtime coordinator prototype (not release-ready)
+
+The current source prototype includes a coordinator, a pure acquisition helper, diagnostic sensor entities and manual pending-session actions. It uses the selected scan counter as the trigger. For the current GM67 firmware, the coordinator also consumes esphome.barcode_scanned after the counter increment; the event carries the barcode for that exact scan. This event is important because the firmware publishes the counter before the last-barcode sensor and delays the event by 300 ms. A generic scanner fallback reads the selected barcode entity only when exactly one counter increment is pending. Ambiguous multi-increment fallback never auto-saves.
+
+The coordinator requires a zero reading after scan followed by a positive stable-weight reading. It performs local catalogue lookup first, then Open Food Facts v2 using Home Assistant's shared aiohttp session. Unknown products can be resolved by adding a catalogue food with the matching barcode. Diagnostic entities and save_pending, discard_pending, and get_status actions are present.
+
+This implementation is still experimental: no Home Assistant runtime tests or physical device tests have passed, pending sessions are in-memory only, and the Aurora dashboard is not connected.
