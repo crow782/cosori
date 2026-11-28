@@ -149,7 +149,7 @@ Dettagli packaging: [HACS_ARCHITECTURE.md](../food_diary_integration/HACS_ARCHIT
 
 ## 10. Runtime acquisition state machine
 
-The prototype coordinator consumes the selected scan counter as the new-scan gate and the selected stable-weight entity as the scale source. It also listens for the current ESPHome event esphome.barcode_scanned, whose payload contains the barcode for that scan. The current firmware publishes the counter first, publishes the last-barcode entity next, then emits the event after 300 ms. The event payload is preferred for the current ESPHome firmware; the selected barcode entity is the fallback for other scanner integrations.
+The prototype coordinator consumes the selected scan counter as the new-scan gate and the selected stable-weight entity as the scale source. It also listens for the current ESPHome event esphome.barcode_scanned, whose payload contains the barcode for that scan. The current firmware publishes the counter first, publishes the last-barcode entity next, then emits the event after 300 ms. For the current ESPHome firmware, the event is accepted only as a confirmation when exactly one counter increment is pending and its payload matches the selected barcode entity. Because the event reads Last Barcode after a delay rather than carrying an immutable per-scan snapshot, overlapping scans are treated as ambiguous.
 
 A generic scanner fallback is accepted only when exactly one counter increment is pending. Multiple increments without matching ESPHome events are treated as ambiguous and are never auto-saved. This is intentionally fail-safe rather than guessing which barcode belongs to which count.
 
