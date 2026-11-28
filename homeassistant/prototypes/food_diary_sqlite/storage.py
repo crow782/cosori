@@ -308,6 +308,7 @@ class FoodDiaryStore:
     def add_entry(
         self, food_id: str, weight_g: float, meal_type: str, *,
         consumed_at: str | datetime | None = None, source: str = "catalog",
+        pending_session_id: str | None = None,
     ) -> dict[str, Any]:
         weight = float(weight_g)
         if not math.isfinite(weight) or weight <= 0:
@@ -326,6 +327,12 @@ class FoodDiaryStore:
                 key: (value * weight / 100 if value is not None else None)
                 for key, value in per100.items()
             }
+            if pending_session_id is not None:
+                pending = db.execute(
+                    "SELECT session_id FROM pending_sessions WHERE slot='active'"
+                ).fetchone()
+                if pending is None or pending["session_id"] != pending_session_id:
+                    raise ValueError("pending scan session is no longer active")
             db.execute(
                 """INSERT INTO entries
                 (id,food_id,food_name_snapshot,brand_snapshot,barcode_snapshot,weight_g,
@@ -336,7 +343,13 @@ class FoodDiaryStore:
                  meal_type, timestamp, source, *[portion[k] for k in NUTRIENTS],
                  json.dumps(per100, allow_nan=False), _now(), _now()],
             )
-            return dict(db.execute("SELECT * FROM entries WHERE id=?", (entry_id,)).fetchone())
+            entry = dict(db.execute("SELECT * FROM entries WHERE id=?", (entry_id,)).fetchone())
+            if pending_session_id is not None:
+                db.execute(
+                    "DELETE FROM pending_sessions WHERE slot='active' AND session_id=?",
+                    (pending_session_id,),
+                )
+            return entry
 
     def list_entries(self, start: str, end: str) -> list[dict[str, Any]]:
         start_ts, end_ts = _timestamp(start), _timestamp(end)
