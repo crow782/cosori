@@ -432,21 +432,16 @@ class FoodDiaryCoordinator:
 
     @callback
     def _async_timeout(self, _now) -> None:
+        """Stop the current weight wait without deleting the durable scan session."""
         self._timeout_cancel = None
-        self.hass.async_create_task(self._async_expire_session())
-
-    async def _async_expire_session(self) -> None:
         if self._session is None or self._session.weight_g is not None:
             return
-        session_id = self._session_id
-        self._session = None
-        self._clear_session_metadata()
-        if session_id:
-            await self.hass.async_add_executor_job(
-                self.store.delete_pending_session, session_id
-            )
-        self.last_error = "scan_session_timeout"
-        self.state = "timeout"
+        # The short acquisition timeout is not the 24-hour retention period.
+        # Keep the barcode in SQLite so a later scale update or HA restart can
+        # resume the session. A fresh zero and positive stable weight are still
+        # required; no pre-timeout or pre-restart weight is trusted.
+        self.last_error = "weight_acquisition_timeout"
+        self.state = "weight_timeout"
         self._notify()
 
     async def _async_lookup_product(self, barcode: str) -> None:
