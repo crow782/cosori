@@ -2,7 +2,9 @@
 
 > **Experimental only. Do not install in the active Home Assistant instance.**
 > This folder is separate from the current packages and ESPHome firmware. The
-> component is not yet validated against the user's Home Assistant Core version.
+> component is not yet validated against Home Assistant Core 2026.11.3.
+>
+> Distribution target and packaging decisions: [HACS_ARCHITECTURE.md](HACS_ARCHITECTURE.md).
 
 ## Purpose
 
@@ -18,7 +20,7 @@ automations can use one stable API.
 - `config_flow.py`: UI setup flow (single local instance).
 - `services.py`: Home Assistant actions and input validation.
 - `services.yaml`: action descriptions and selectors.
-- `strings.json`: UI translations.
+- `strings.json`: prototype translations; before external HACS publication this must become `translations/en.json` and `translations/it.json`.
 - `storage.py`: isolated SQLite repository copied from the tested-design
   prototype; it has no Home Assistant imports.
 
@@ -106,6 +108,22 @@ operations do not block the event loop.
 - No automatic Cosori/GM67 event subscription is implemented yet.
 - No Lovelace dashboard or custom frontend is included yet.
 - The package `homeassistant/packages/food_diary.yaml` remains untouched.
+
+## HACS distribution target
+
+The final product is intended to be a complete, UI-configurable Home Assistant
+integration distributed from a dedicated public GitHub repository. The current
+Cosori repository will remain the development/prototype home; it is not the
+planned HACS package because it also contains firmware and unrelated project
+files.
+
+The planned package includes the integration and its Aurora panel in one HACS
+integration repository. Setup will let the user select the ESPHome weight
+sensor and scanner device through Home Assistant selectors. It will not ask
+for BLE MAC addresses or GATT UUIDs.
+
+See [HACS_ARCHITECTURE.md](HACS_ARCHITECTURE.md) for the repository layout,
+configurable fields, panel strategy, compatibility policy and release gates.
 
 ## Validation status
 
