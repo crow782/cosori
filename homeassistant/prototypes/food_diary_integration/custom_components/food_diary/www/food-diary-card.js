@@ -232,7 +232,7 @@ class FoodDiaryAuroraCard extends HTMLElement {
       '<button type="submit">Registra porzione</button></form></details>' +
       '<details class="form-panel"><summary>＋ Nuovo alimento manuale</summary><form data-form="food">' +
       '<div class="form-grid"><label>Nome<input name="name" required maxlength="160"></label>' +
-      '<label>Marca<input name="brand" maxlength="120"></label></div><label>Barcode<input name="barcode" maxlength="64"></label>' +
+      '<label>Marca<input name="brand" maxlength="120"></label></div><label>Barcode<input name="barcode" maxlength="64" value="' + this._escape(status.pending_barcode || "") + '"></label>' +
       '<p class="hint">Valori per 100 g · lascia vuoti quelli sconosciuti</p><div class="form-grid nutrients">' +
       this._nutrientInput("energy_kcal","Energia (kcal)") + this._nutrientInput("protein_g","Proteine (g)") +
       this._nutrientInput("carbohydrates_g","Carboidrati (g)") + this._nutrientInput("sugars_g","Zuccheri (g)") +
