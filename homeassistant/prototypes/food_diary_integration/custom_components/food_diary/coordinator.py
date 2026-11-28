@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import uuid
+from datetime import datetime, timedelta, timezone
 from functools import partial
 from typing import Any
 
@@ -84,6 +86,10 @@ class FoodDiaryCoordinator:
             "zero_seen": session.zero_seen if session else None,
             "last_error": self.last_error,
             "last_entry_id": self.last_entry.get("id") if self.last_entry else None,
+            "pending_session_restored": self._session_restored if session else None,
+            "pending_session_expires_at": (
+                self._session_expires_at.isoformat() if session and self._session_expires_at else None
+            ),
         }
 
     def async_add_listener(self, listener):
@@ -108,6 +114,7 @@ class FoodDiaryCoordinator:
         self._weight_g = self._read_weight_state()
         self.last_weight_g = self._weight_g
         self.state = "ready" if self._weight_g is not None else "waiting_for_scale"
+        await self._async_restore_pending_session()
         self._unsubscribers.append(
             async_track_state_change_event(
                 self.hass,
@@ -280,6 +287,109 @@ class FoodDiaryCoordinator:
             return
         await self._async_begin_scan(barcode)
 
+    def _clear_session_metadata(self) -> None:
+        """Clear in-memory metadata and cancel the long-lived session expiry."""
+        self._session_id = None
+        self._session_created_at = None
+        self._session_expires_at = None
+        self._session_restored = False
+        if self._session_expiry_cancel:
+            self._session_expiry_cancel()
+            self._session_expiry_cancel = None
+
+    def _schedule_session_expiry(self) -> None:
+        """Schedule the hard 24-hour expiry independently of the weight timeout."""
+        if self._session_expiry_cancel:
+            self._session_expiry_cancel()
+            self._session_expiry_cancel = None
+        if self._session_expires_at is None:
+            return
+        remaining = max(
+            0.0,
+            (self._session_expires_at - datetime.now(timezone.utc)).total_seconds(),
+        )
+        self._session_expiry_cancel = async_call_later(
+            self.hass, remaining, self._async_session_expired
+        )
+
+    async def _async_persist_session(self) -> None:
+        """Persist the pending barcode and its expiry; never persist a trusted weight."""
+        if not self._session or not self._session_id or not self._session_created_at or not self._session_expires_at:
+            return
+        await self.hass.async_add_executor_job(
+            partial(
+                self.store.save_pending_session,
+                self._session_id,
+                self._session.barcode,
+                self._session_created_at.isoformat(),
+                self._session_expires_at.isoformat(),
+            )
+        )
+
+    async def _async_restore_pending_session(self) -> None:
+        """Restore an unexpired barcode, requiring a fresh zero and fresh weighing."""
+        record = await self.hass.async_add_executor_job(self.store.get_pending_session)
+        if not record:
+            return
+        expires_at = datetime.fromisoformat(record["expires_at"]).astimezone(timezone.utc)
+        now = datetime.now(timezone.utc)
+        if expires_at <= now:
+            await self.hass.async_add_executor_job(
+                self.store.delete_pending_session, record["session_id"]
+            )
+            self.last_error = "restored_scan_session_expired"
+            return
+        barcode = normalize_barcode(record.get("barcode"))
+        if barcode is None:
+            await self.hass.async_add_executor_job(
+                self.store.delete_pending_session, record["session_id"]
+            )
+            self.last_error = "restored_scan_session_invalid"
+            return
+        self._session_id = record["session_id"]
+        self._session_created_at = datetime.fromisoformat(record["created_at"]).astimezone(timezone.utc)
+        self._session_expires_at = expires_at
+        self._session_restored = True
+        self._session = ScanSession(
+            barcode=barcode,
+            zero_seen=False,
+            weight_g=None,
+            status="restored_requires_reweigh",
+        )
+        food = await self.hass.async_add_executor_job(
+            self.store.find_food_by_barcode, barcode
+        )
+        if food is not None:
+            self._session.food = food
+            self._session.status = "restored_requires_reweigh"
+            self.state = "restored_waiting_for_zero"
+        else:
+            self._session.status = "unknown_product"
+            self.state = "unknown_product"
+        self.last_barcode = barcode
+        self.last_error = "restored_session_requires_fresh_tare_and_weighing"
+        self._schedule_session_expiry()
+        self._notify()
+
+    @callback
+    def _async_session_expired(self, _now) -> None:
+        self._session_expiry_cancel = None
+        self.hass.async_create_task(self._async_expire_persisted_session())
+
+    async def _async_expire_persisted_session(self) -> None:
+        """Expire the pending session after its durable 24-hour retention window."""
+        session_id = self._session_id
+        self._session = None
+        self._clear_session_metadata()
+        if session_id:
+            await self.hass.async_add_executor_job(
+                self.store.delete_pending_session, session_id
+            )
+        self._cancel_timeout()
+        self.last_error = "scan_session_retention_expired"
+        self.state = "expired"
+        self._notify()
+
     async def _async_begin_scan(self, barcode: str) -> None:
         async with self._lock:
             if self._session is not None:
@@ -297,12 +407,18 @@ class FoodDiaryCoordinator:
                     and self._weight_g <= float(self.config[CONF_ZERO_THRESHOLD])
                 ),
             )
+            self._session_id = str(uuid.uuid4())
+            self._session_created_at = datetime.now(timezone.utc)
+            self._session_expires_at = self._session_created_at + timedelta(hours=24)
+            self._session_restored = False
             self.state = "looking_up_product"
             timeout = int(self.config[CONF_WEIGHT_TIMEOUT])
             self._timeout_cancel = async_call_later(
                 self.hass, timeout, self._async_timeout
             )
+            self._schedule_session_expiry()
             self._notify()
+        await self._async_persist_session()
         await self._async_lookup_product(barcode)
 
     @callback
@@ -313,7 +429,13 @@ class FoodDiaryCoordinator:
     async def _async_expire_session(self) -> None:
         if self._session is None or self._session.weight_g is not None:
             return
+        session_id = self._session_id
         self._session = None
+        self._clear_session_metadata()
+        if session_id:
+            await self.hass.async_add_executor_job(
+                self.store.delete_pending_session, session_id
+            )
         self.last_error = "scan_session_timeout"
         self.state = "timeout"
         self._notify()
@@ -442,6 +564,10 @@ class FoodDiaryCoordinator:
             self.state = "waiting_for_product" if self._session.food is None else "ready_to_save"
         else:
             self.state = "waiting_for_weight" if self._session.food else "unknown_product"
+            if self._timeout_cancel is None:
+                self._timeout_cancel = async_call_later(
+                    self.hass, int(self.config[CONF_WEIGHT_TIMEOUT]), self._async_timeout
+                )
         await self._async_maybe_complete()
         self._notify()
 
@@ -500,7 +626,13 @@ class FoodDiaryCoordinator:
                 self.last_entry = entry
                 self.state = "saved"
                 self.last_error = None
+                session_id = self._session_id
                 self._session = None
+                self._clear_session_metadata()
+                if session_id:
+                    await self.hass.async_add_executor_job(
+                        self.store.delete_pending_session, session_id
+                    )
                 self._notify()
             return entry
 
@@ -509,8 +641,14 @@ class FoodDiaryCoordinator:
         async with self._save_lock:
             if self._session is None:
                 return
+            session_id = self._session_id
             self._session = None
+            self._clear_session_metadata()
             self._cancel_timeout()
+            if session_id:
+                await self.hass.async_add_executor_job(
+                    self.store.delete_pending_session, session_id
+                )
             self.state = "discarded"
             self.last_error = None
             self._notify()
