@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Food Diary",
+        "description": "Create a local food catalogue and meal diary database."
+      }
+    },
+    "abort": {
+      "already_configured": "Food Diary is already configured."
+    }
+  }
+}
