@@ -30,7 +30,7 @@ NUTRIENTS = (
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(timezone.utc).isoformat(timespec="microseconds")
 
 
 def _timestamp(value: str | datetime | None) -> str:
@@ -39,7 +39,7 @@ def _timestamp(value: str | datetime | None) -> str:
     parsed = datetime.fromisoformat(value) if isinstance(value, str) else value
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise ValueError("consumed_at must include a timezone/UTC offset")
-    return parsed.astimezone(timezone.utc).isoformat(timespec="seconds")
+    return parsed.astimezone(timezone.utc).isoformat(timespec="microseconds")
 
 
 def _optional_text(value: Any) -> str | None:
@@ -81,6 +81,11 @@ class FoodDiaryStore:
 
     def _initialize(self) -> None:
         with self._connect() as db:
+            schema_version = int(db.execute("PRAGMA user_version").fetchone()[0])
+            if schema_version > 1:
+                raise RuntimeError(
+                    f"database schema version {schema_version} is newer than supported version 1"
+                )
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS foods (
                     id TEXT PRIMARY KEY,
@@ -125,6 +130,8 @@ class FoodDiaryStore:
                 CREATE INDEX IF NOT EXISTS idx_entries_consumed_at ON entries(consumed_at);
                 CREATE INDEX IF NOT EXISTS idx_entries_meal ON entries(meal_type);
             """)
+            if schema_version == 0:
+                db.execute("PRAGMA user_version = 1")
 
     def add_food(
         self, name: str, *, brand: str | None = None, barcode: str | None = None,
@@ -292,6 +299,8 @@ class FoodDiaryStore:
                 selected_date = date.fromisoformat(anchor_date)
             except ValueError as exc:
                 raise ValueError("anchor_date must be YYYY-MM-DD") from exc
+        elif isinstance(anchor_date, datetime):
+            raise ValueError("anchor_date must be a date, not a datetime")
         elif isinstance(anchor_date, date):
             selected_date = anchor_date
         else:
