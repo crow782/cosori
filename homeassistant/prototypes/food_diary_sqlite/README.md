@@ -29,7 +29,7 @@ I test usano un database temporaneo e non scrivono nella configurazione Home Ass
 - `foods`: catalogo alimenti, barcode univoco se presente, nutrienti per 100 g; valori sconosciuti memorizzati come SQL NULL.
 - `entries`: singole porzioni consumate con pasto, data/ora ISO 8601, origine e snapshot di nome, marca e nutrienti. Modificare un alimento nel catalogo non cambia le registrazioni precedenti.
 
-I pasti ammessi sono `breakfast`, `lunch`, `dinner`, `snack`. Le date devono includere un offset UTC per evitare timestamp ambigui. I timestamp vengono normalizzati in UTC preservando la precisione al microsecondo. Il database usa `PRAGMA user_version` (versione schema 2); all'apertura viene applicata la migrazione dalla versione 1, che normalizza i timestamp preesistenti alla precisione uniforme. Versioni future non riconosciute vengono rifiutate invece di essere aperte silenziosamente.
+I pasti ammessi sono `breakfast`, `lunch`, `dinner`, `snack`. Le date devono includere un offset UTC per evitare timestamp ambigui. I timestamp vengono normalizzati in UTC preservando la precisione al microsecondo. Il database usa `PRAGMA user_version` (versione schema 3); all'apertura viene applicata la migrazione dalla versione 1, che normalizza i timestamp preesistenti alla precisione uniforme. Versioni future non riconosciute vengono rifiutate invece di essere aperte silenziosamente.
 
 ## Riepiloghi temporali
 
@@ -45,7 +45,7 @@ Questo è solo il livello dati. Non contiene ancora:
 - integrazione caricabile in Home Assistant, config flow o servizi;
 - chiamate Open Food Facts;
 - collegamento a Cosori/GM67;
-- gestione delle sessioni di scansione;
+- gestione delle sessioni di scansione (tabella SQLite `pending_sessions`, retention 24 ore);
 - dashboard o moduli Lovelace;
 - migrazione dei dati dal package attuale.
 
