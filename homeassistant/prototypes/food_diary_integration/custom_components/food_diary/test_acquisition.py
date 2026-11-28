@@ -1,14 +1,24 @@
 """Unit tests for scanner value parsing and portion gating."""
 from __future__ import annotations
 
+import importlib.util
+from pathlib import Path
+import sys
 import unittest
 
-from food_diary.acquisition import (
-    ScanSession,
-    normalize_barcode,
-    parse_openfoodfacts_product,
-    parse_weight_grams,
-)
+# Load the pure helper directly: importing the integration package would run
+# its Home Assistant-dependent __init__.py, which these tests intentionally avoid.
+_MODULE_PATH = Path(__file__).with_name("acquisition.py")
+_SPEC = importlib.util.spec_from_file_location("food_diary_acquisition", _MODULE_PATH)
+assert _SPEC is not None and _SPEC.loader is not None
+_MODULE = importlib.util.module_from_spec(_SPEC)
+sys.modules[_SPEC.name] = _MODULE
+_SPEC.loader.exec_module(_MODULE)
+
+ScanSession = _MODULE.ScanSession
+normalize_barcode = _MODULE.normalize_barcode
+parse_openfoodfacts_product = _MODULE.parse_openfoodfacts_product
+parse_weight_grams = _MODULE.parse_weight_grams
 
 
 class BarcodeNormalizationTests(unittest.TestCase):
