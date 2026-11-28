@@ -123,7 +123,7 @@ operations do not block the event loop.
 - Nutrients unknown at source remain null, not zero.
 - Diary entries retain product/nutrient snapshots.
 - The database schema is versioned; version 1 timestamps migrate to version 2.
-- Open Food Facts v2 lookup is implemented in the experimental runtime coordinator.
+- Open Food Facts v3 barcode lookup is implemented in the experimental runtime coordinator.
 - An experimental coordinator now listens to the selected scan counter and the ESPHome barcode event.
 - No Lovelace dashboard or custom frontend is connected yet; the Aurora mockup remains separate.
 - The package `homeassistant/packages/food_diary.yaml` remains untouched.
@@ -175,3 +175,5 @@ Generic scanner fallback: if no ESPHome event arrives, one pending counter incre
 The current pending session is held in memory; a Home Assistant restart during an incomplete/unknown-product session loses that pending session. The actual catalogue and diary remain in SQLite.
 
 Runtime code is still experimental and has not been loaded in Home Assistant or tested with the physical devices.
+
+Open Food Facts compatibility note: barcode lookup uses the current v3 product API. The text alternative search currently uses the legacy full-text endpoint because Open Food Facts documents full-text search as unavailable in v2/v3 and still served by the legacy endpoint. Keep this isolated behind the coordinator method so it can be replaced when the dedicated search service is available.
