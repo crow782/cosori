@@ -44,14 +44,13 @@ esp32_ble_tracker:
   on_ble_advertise:
     - then:
         - lambda: |-
-            const std::string address = x.address_str();
-            if (address != std::string("${scale_mac}")) {
+            char address_buf[ESPBTDevice::MAC_ADDRESS_PRETTY_BUFFER_SIZE];
+            x.address_str_to(address_buf);
+            if (std::string(address_buf) != std::string("${scale_mac}")) {
               return;
             }
 
             const std::string name = x.get_name();
-            char address_buf[ESPBTDevice::MAC_ADDRESS_PRETTY_BUFFER_SIZE];
-            x.address_str_to(address_buf);
 
             // The tracker exposes the original ESP-IDF scan result during this
             // callback. ble_adv contains ADV bytes followed by SCAN_RSP bytes.
