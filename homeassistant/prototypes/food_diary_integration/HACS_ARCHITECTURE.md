@@ -82,7 +82,7 @@ Un solo config entry locale per il diario, con Options Flow per cambiare le impo
 
 - **Bilancia:** entity selector filtrato su entità `sensor`, integrazione ESPHome e device class `weight`. L'utente sceglie il sensore di peso stabile, non inserisce MAC BLE o UUID GATT.
 - **Scanner:** entity selector generico sul dominio `sensor`; l'utente seleziona direttamente l'entità che pubblica l'ultimo barcode, ad esempio `sensor.barcode_scanner_last_barcode`. Non è richiesto un device selector né un identificatore aggiuntivo nel firmware.
-- **Barcode:** il runtime leggerà l'entità selezionata. Ascoltare gli eventi `state_changed` e valutare `state_reported` per gli aggiornamenti ripetuti senza variazione del valore. Verificare che ESPHome pubblichi ogni scansione identica; non assumere che `last_changed` cambi a ogni lettura. Se l'entità non viene aggiornata a ogni scansione, introdurre un evento dedicato o un attributo contatore nel firmware di sviluppo.
+- **Barcode:** il runtime leggerà l'entità selezionata. Ascoltare `state_changed` e valutare `state_reported` con event_filter limitato all'entity_id selezionato, per gli aggiornamenti ripetuti senza variazione del valore. Verificare che ESPHome pubblichi ogni scansione identica; non assumere che `last_changed` cambi a ogni lettura. Se l'entità non viene aggiornata a ogni scansione, introdurre un evento dedicato o un attributo contatore nel firmware di sviluppo.
 
 Per il firmware Cosori attuale, la selezione prevista è il sensore `Cosori Weight Stable` e il device ESPHome `Cosori Food Diary`. Non usare il sensore peso raw per la registrazione automatica.
 
