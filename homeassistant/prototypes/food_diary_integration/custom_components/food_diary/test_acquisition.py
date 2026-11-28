@@ -75,6 +75,49 @@ class OpenFoodFactsParserTests(unittest.TestCase):
         )
         self.assertAlmostEqual(product["nutrients_per_100g"]["energy_kcal"], 100)
 
+    def test_parses_v3_aggregated_nutrients(self):
+        product = parse_openfoodfacts_product(
+            {
+                "status": "success",
+                "product": {
+                    "product_name": "Yogurt",
+                    "brands": "Example",
+                    "nutrition": {
+                        "aggregated_set": {
+                            "per": "100g",
+                            "nutrients": {
+                                "energy-kcal": {"value_computed": 62},
+                                "proteins": {"value": 4.5},
+                                "fat": {"value_computed": None, "value": 3.2},
+                            },
+                        }
+                    },
+                },
+            },
+            "8017596008299",
+        )
+        self.assertEqual(product["nutrients_per_100g"]["energy_kcal"], 62)
+        self.assertEqual(product["nutrients_per_100g"]["protein_g"], 4.5)
+        self.assertEqual(product["nutrients_per_100g"]["fat_g"], 3.2)
+
+    def test_v3_non_100g_values_are_not_misrepresented(self):
+        product = parse_openfoodfacts_product(
+            {
+                "status": "success",
+                "product": {
+                    "product_name": "Drink",
+                    "nutrition": {
+                        "aggregated_set": {
+                            "per": "100ml",
+                            "nutrients": {"energy-kcal": {"value": 42}},
+                        }
+                    },
+                },
+            },
+            "8017596008299",
+        )
+        self.assertIsNone(product["nutrients_per_100g"]["energy_kcal"])
+
     def test_invalid_nutrient_values_remain_unknown(self):
         product = parse_openfoodfacts_product(
             {"status": 1, "product": {"product_name": "Food", "nutriments": {"proteins_100g": "trace", "fat_100g": "-1"}}},
