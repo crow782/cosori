@@ -6,14 +6,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
 
-from .const import DOMAIN
 
 
 DESCRIPTIONS = (
     SensorEntityDescription(
         key="status",
         name="Food Diary Status",
-        icon="mdi:state-machine",
+        icon="mdi:information-outline",
     ),
     SensorEntityDescription(
         key="last_barcode",
@@ -23,7 +22,7 @@ DESCRIPTIONS = (
     SensorEntityDescription(
         key="last_weight",
         name="Food Diary Last Stable Weight",
-        icon="mdi:weight-gram",
+        icon="mdi:scale",
         native_unit_of_measurement="g",
     ),
     SensorEntityDescription(
@@ -55,7 +54,7 @@ class FoodDiaryDiagnosticSensor(SensorEntity):
     def __init__(self, coordinator, description: SensorEntityDescription) -> None:
         self.coordinator = coordinator
         self.entity_description = description
-        self._attr_unique_id = f"{coordinator.config.get('entry_id', 'food_diary')}_{description.key}"
+        self._attr_unique_id = f"food_diary_{description.key}"
 
     @property
     def native_value(self):
