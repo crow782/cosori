@@ -116,7 +116,7 @@ Runtime presente come prototipo, da validare:
 - correlazione barcode/peso con baseline zero, timeout, sessione singola e protezione dai salvataggi doppi;
 - lookup Open Food Facts v2 con sessione aiohttp condivisa di Home Assistant;
 - sessione prodotto sconosciuto risolvibile aggiungendo alimento con lo stesso barcode;
-- azioni `save_pending`, `discard_pending`, `get_status`;
+- azioni `save_pending`, `discard_pending`, `get_status`, `search_openfoodfacts`;
 - sensori diagnostici per stato, ultimo barcode, ultimo peso stabile e scan count;
 - test unitari puri per parsing barcode/peso, soglia zero e parsing nutrienti.
 
@@ -196,7 +196,7 @@ python -m py_compile storage.py tests/test_storage.py
 1. **Verifica statica del config flow** rispetto alle API pubbliche di Core 2026.11.3: selector, entity registry, OptionsFlow, setup/unload e traduzioni.
 2. **Coordinator**: prototipo implementato; testare eventi ESPHome, fallback entity-only, counter reset, scansioni ravvicinate, scanner non ESPHome, errori/unavailable e unload.
 3. **State machine peso**: zero stabile prima della scansione, barcode pendente, peso positivo stabile, conversione unità g/kg, timeout, peso negativo/non valido, sessione concorrente, annullamento e ripristino dopo errore.
-4. **Lookup**: prototipo Open Food Facts v2 implementato; aggiungere test HTTP mock e verificare parametri paese/lingua, status 404, timeout e rate-limit.
+4. **Lookup**: lookup barcode OFF v2 e ricerca testuale alternativa legacy implementati; aggiungere test HTTP mock e verificare parametri paese/lingua, status 404, timeout e rate-limit.
 5. **Persistenza e servizi**: collegamento coordinator-storage presente; aggiungere test servizi, gestione errori DB e persistenza delle sessioni pendenti.
 6. **Test automatici**: unit test coordinator/state machine con fake hass e state/event bus; test config flow; test servizi e migrazioni.
 7. **Diagnostica**: sensori base implementati; verificare naming, unique_id e stati in HA.
