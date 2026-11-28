@@ -141,3 +141,7 @@ The current source prototype includes a coordinator, a pure acquisition helper, 
 The coordinator requires a zero reading after scan followed by a positive stable-weight reading. It performs local catalogue lookup first, then Open Food Facts v3 using Home Assistant's shared aiohttp session. Unknown products can be resolved by adding a catalogue food with the matching barcode. Diagnostic entities and save_pending, discard_pending, get_status, and search_openfoodfacts actions are present. Text-search candidates are not inserted into the local catalogue until the user explicitly adds one.
 
 This implementation is still experimental: no Home Assistant runtime tests or physical device tests have passed, pending sessions are in-memory only, and the Aurora dashboard is not connected.
+
+## Aurora Lovelace asset
+
+The package includes a dependency-free custom card under the integration www directory and serves it from /food_diary/food-diary-card.js through Home Assistant HTTP static paths. The user adds this URL once as a JavaScript module resource in Settings → Dashboards → Resources. We intentionally do not call private Lovelace resource registration internals. The card consumes the integration's dashboard-data service and public hass.callService API. This is a custom card, not a custom panel or frontend fork.
