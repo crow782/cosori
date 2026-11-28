@@ -123,7 +123,7 @@ Runtime presente come prototipo, da validare:
 Non ancora presenti:
 - pannello Aurora connesso al backend;
 - test di integrazione Home Assistant/config flow/servizi;
-- persistenza delle sessioni pendenti attraverso riavvii.
+- persistenza delle sessioni pendenti attraverso riavvii: implementata nel prototipo, da validare con test coordinator/HA.
 
 ### Storage SQLite
 
@@ -198,7 +198,7 @@ python -m py_compile storage.py tests/test_storage.py
 3. **State machine peso**: zero stabile prima della scansione, barcode pendente, peso positivo stabile, conversione unità g/kg, timeout, peso negativo/non valido, sessione concorrente, annullamento e ripristino dopo errore.
 4. **Lookup**: lookup barcode OFF v3 e ricerca testuale alternativa legacy implementati; aggiungere test HTTP mock e verificare parametri paese/lingua, status 404, timeout e rate-limit.
 5. **Persistenza e servizi**: collegamento coordinator-storage presente; aggiungere test servizi, gestione errori DB e persistenza delle sessioni pendenti.
-6. **Test automatici**: unit test coordinator/state machine con fake hass e state/event bus; test config flow; test servizi e migrazioni.
+6. **Test automatici**: unit test coordinator/state machine con fake hass e state/event bus; test config flow; test servizi e migrazioni. La CI attuale esegue solo test SQLite e acquisition.
 7. **Diagnostica**: sensori base implementati; verificare naming, unique_id e stati in HA.
 8. **Frontend**: collegare il mockup Aurora alle azioni e al flusso reale; valutare API pannello pubbliche e mantenere fallback Lovelace.
 9. **Validazione**: hassfest, ruff, test HA Core versione minima e ultima release 2026, installazione/upgrade/unload su istanza HA di prova, backup/restore.
@@ -288,3 +288,26 @@ La sessione non viene eliminata da async_stop: un reload dell'integrazione deve 
 3. Verificare un caso reale: scansione nota con peso in attesa → riavvio HA → sessione ripristinata senza peso → nuova tara → nuova pesata → una sola registrazione.
 4. Verificare un caso sconosciuto: scansione → riavvio → barcode ancora presente → inserimento manuale alimento → nuova tara/pesata → una sola registrazione.
 5. Solo dopo questi test considerare il prototipo pronto per una copia di prova isolata; non installarlo ancora nell'istanza HA attiva.
+
+
+## 10. Persistenza sessione pendente — verifica 2026-11-28
+
+Verifica del codice sul branch:
+- `pending_sessions` è creata da `storage.py` (schema v3);
+- `_async_begin_scan` genera session_id e scadenza di 24 ore, poi chiama `_async_persist_session`;
+- `async_start` richiama `_async_restore_pending_session`;
+- il ripristino elimina record scaduti/non validi e richiede sempre una nuova tara/zero e una nuova pesata;
+- `add_entry(..., pending_session_id=...)` inserisce la registrazione e cancella la sessione nella stessa transazione SQLite;
+- discard e scadenza 24h eliminano la sessione;
+- reload/unload mantiene il record persistente.
+
+Correzione tecnica 2026-11-28 (commit `16ca945abb8bf5bad2658ca963717cad42c94f96`):
+- il timeout breve di acquisizione peso non deve cancellare la sessione;
+- ora imposta `weight_timeout` e conserva il barcode fino alla scadenza retention di 24 ore;
+- eventuali dati peso precedenti al timeout o al riavvio non vengono ripristinati né considerati attendibili.
+
+Limiti residui:
+- persistenza coordinator non ancora coperta da test automatici con Home Assistant/fake hass;
+- verificare crash tra creazione in memoria e completamento dell'INSERT SQLite;
+- verificare che una sessione sconosciuta ripristinata possa essere completata con inserimento manuale e nuova pesata;
+- verificare compatibilità runtime su Home Assistant Core 2026.11.3.
