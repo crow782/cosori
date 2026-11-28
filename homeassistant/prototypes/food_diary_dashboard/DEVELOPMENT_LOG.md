@@ -185,3 +185,12 @@ Correzione importante della correlazione eventi: l'evento ESPHome legge Last Bar
 - Il payload ESPHome viene accettato soltanto con un incremento pendente e se coincide con l'entità Last Barcode selezionata; l'evento ritardato non viene trattato come snapshot immutabile.
 - Aggiunta pulizia del coordinator e dei servizi se il setup dell'integrazione o della piattaforma sensori fallisce.
 - Test unitari estesi per transizioni del contatore.
+
+
+## Fase 15 — Dashboard payload e card Aurora (2026-11-28)
+
+- Aggiunta azione get_dashboard_data: riepilogo day/week/month, registrazioni del periodo e catalogo locale fino a 500 alimenti; confini temporali calcolati con ZoneInfo e rispettando DST.
+- Aggiunta card Lovelace custom senza dipendenze JS esterne, usando il contratto custom-card documentato e hass.callService con risposte per le azioni che le supportano.
+- UI include riepiloghi day/week/month, grafico con giorni N/D distinti da giorni con kcal ignote/parziali, pasti, inserimento porzione, nuovo alimento, ricerca alternative OFF e controllo sessione scanner.
+- L'integrazione serve il file statico da /food_diary/food-diary-card.js; il manifest dichiara la dipendenza HTTP. La registrazione della risorsa Lovelace resta manuale e documentata; non si usa API interna non pubblica per auto-registrarla.
+- Esempio Lovelace aggiunto in homeassistant/prototypes/food_diary_dashboard/dashboard.yaml. Tutto resta prototipo non testato su HA Core.
