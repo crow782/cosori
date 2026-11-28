@@ -33,10 +33,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     domain_data["store"] = store
     domain_data["config"] = config
     domain_data["coordinator"] = coordinator
-    await coordinator.async_start()
-    async_setup_services(hass)
+    try:
+        await coordinator.async_start()
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        async_setup_services(hass)
+    except Exception:
+        await coordinator.async_stop()
+        async_unload_services(hass)
+        domain_data.pop("coordinator", None)
+        domain_data.pop("store", None)
+        domain_data.pop("config", None)
+        raise
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
