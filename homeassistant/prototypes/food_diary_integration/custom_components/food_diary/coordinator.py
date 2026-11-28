@@ -400,34 +400,47 @@ class FoodDiaryCoordinator:
         self._notify()
 
     async def _async_begin_scan(self, barcode: str) -> None:
-        async with self._lock:
-            if self._session is not None:
-                self.last_error = "previous_scan_still_pending"
-                self.state = "session_busy"
+        # Serialize creation/persistence with save and discard so a fast UI
+        # action cannot delete a row before this task writes it afterwards.
+        async with self._save_lock:
+            async with self._lock:
+                if self._session is not None:
+                    self.last_error = "previous_scan_still_pending"
+                    self.state = "session_busy"
+                    self._notify()
+                    return
+                self.last_barcode = barcode
+                self.last_error = None
+                self.last_entry = None
+                self._session = ScanSession(
+                    barcode=barcode,
+                    zero_seen=(
+                        self._weight_g is not None
+                        and self._weight_g <= float(self.config[CONF_ZERO_THRESHOLD])
+                    ),
+                )
+                self._session_id = str(uuid.uuid4())
+                self._session_created_at = datetime.now(timezone.utc)
+                self._session_expires_at = self._session_created_at + timedelta(hours=24)
+                self._session_restored = False
+                self.state = "looking_up_product"
+                timeout = int(self.config[CONF_WEIGHT_TIMEOUT])
+                self._timeout_cancel = async_call_later(
+                    self.hass, timeout, self._async_timeout
+                )
+                self._schedule_session_expiry()
+                self._notify()
+            try:
+                await self._async_persist_session()
+            except Exception:
+                _LOGGER.exception("Unable to persist pending Food Diary scan")
+                self._session = None
+                self._clear_session_metadata()
+                self._cancel_timeout()
+                self.last_error = "pending_session_persist_failed"
+                self.state = "storage_error"
                 self._notify()
                 return
-            self.last_barcode = barcode
-            self.last_error = None
-            self.last_entry = None
-            self._session = ScanSession(
-                barcode=barcode,
-                zero_seen=(
-                    self._weight_g is not None
-                    and self._weight_g <= float(self.config[CONF_ZERO_THRESHOLD])
-                ),
-            )
-            self._session_id = str(uuid.uuid4())
-            self._session_created_at = datetime.now(timezone.utc)
-            self._session_expires_at = self._session_created_at + timedelta(hours=24)
-            self._session_restored = False
-            self.state = "looking_up_product"
-            timeout = int(self.config[CONF_WEIGHT_TIMEOUT])
-            self._timeout_cancel = async_call_later(
-                self.hass, timeout, self._async_timeout
-            )
-            self._schedule_session_expiry()
-            self._notify()
-        await self._async_persist_session()
         await self._async_lookup_product(barcode)
 
     @callback
