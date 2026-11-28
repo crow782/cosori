@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 import re
-from typing import Any
+from typing import Any, Mapping
 
 _BARCODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/+-]{3,63}$")
 
@@ -77,3 +77,41 @@ class ScanSession:
             and self.weight_g > 0
             and self.zero_seen
         )
+
+def parse_openfoodfacts_product(
+    payload: Mapping[str, Any], barcode: str
+) -> dict[str, Any] | None:
+    """Convert an Open Food Facts v2 response into the local food schema.
+
+    Missing nutrient values remain None. Energy is normalized to kcal/100 g.
+    """
+    if payload.get("status") != 1:
+        return None
+    product = payload.get("product") or {}
+    name = str(product.get("product_name") or "").strip()
+    if not name:
+        return None
+    nutriments = product.get("nutriments") or {}
+    energy = nutriments.get("energy-kcal_100g")
+    if energy is None and nutriments.get("energy-kj_100g") is not None:
+        try:
+            energy = float(nutriments["energy-kj_100g"]) / 4.184
+        except (TypeError, ValueError):
+            energy = None
+    nutrients = {
+        "energy_kcal": energy,
+        "protein_g": nutriments.get("proteins_100g"),
+        "carbohydrates_g": nutriments.get("carbohydrates_100g"),
+        "sugars_g": nutriments.get("sugars_100g"),
+        "fat_g": nutriments.get("fat_100g"),
+        "saturated_fat_g": nutriments.get("saturated-fat_100g"),
+        "fiber_g": nutriments.get("fiber_100g"),
+        "salt_g": nutriments.get("salt_100g"),
+    }
+    return {
+        "name": name,
+        "brand": product.get("brands"),
+        "barcode": barcode,
+        "nutrients_per_100g": nutrients,
+        "source": "openfoodfacts",
+    }
