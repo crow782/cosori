@@ -18,7 +18,11 @@ automations can use one stable API.
 - `custom_components/food_diary/manifest.json`: integration metadata.
 - `__init__.py`: config-entry lifecycle and SQLite initialization.
 - `config_flow.py`: UI setup flow (single local instance).
-- `services.py`: Home Assistant actions and input validation.
+- `services.py`: Home Assistant actions and input validation, including pending-session controls.
+- `coordinator.py`: selected-entity listeners, scan/weight correlation, local and Open Food Facts lookup, and session lifecycle.
+- `acquisition.py`: pure barcode/weight/Open Food Facts parsing and zero-baseline gate.
+- `sensor.py`: lightweight acquisition diagnostic sensors.
+- `test_acquisition.py`: dependency-free unit tests for acquisition rules.
 - `services.yaml`: action descriptions and selectors.
 - `translations/en.json` and `translations/it.json`: English and Italian UI/action translations.
 - `storage.py`: isolated SQLite repository copied from the tested-design
@@ -118,9 +122,9 @@ operations do not block the event loop.
 - Nutrients unknown at source remain null, not zero.
 - Diary entries retain product/nutrient snapshots.
 - The database schema is versioned; version 1 timestamps migrate to version 2.
-- No barcode lookup to Open Food Facts is implemented in this integration yet.
-- No automatic Cosori/GM67 event subscription is implemented yet.
-- No Lovelace dashboard or custom frontend is included yet.
+- Open Food Facts v2 lookup is implemented in the experimental runtime coordinator.
+- An experimental coordinator now listens to the selected scan counter and the ESPHome barcode event.
+- No Lovelace dashboard or custom frontend is connected yet; the Aurora mockup remains separate.
 - The package `homeassistant/packages/food_diary.yaml` remains untouched.
 
 ## HACS distribution target
@@ -153,3 +157,20 @@ The SQLite storage module is copied into this integration directory to make
 the prototype self-contained. Keep it synchronized with
 `homeassistant/prototypes/food_diary_sqlite/storage.py` until the integration
 is promoted out of the prototypes area.
+
+
+## Acquisition runtime prototype
+
+The prototype coordinator now listens to the selected scan-count sensor and the selected stable-weight sensor. It also listens for the current ESPHome event esphome.barcode_scanned. The current firmware increments the counter, publishes Last Barcode, then emits one delayed event carrying the barcode for that exact scan. The counter gates the event; its payload preserves the exact barcode even if another scan updates the last-value sensor before the previous event is handled.
+
+One scan session is accepted at a time. A session requires a zero reading at or below the configured threshold after the scan, followed by a positive stable-weight reading. This protects against a non-empty scale at scan time: the first positive value is ignored until zero is observed and a later positive value arrives. The integration does not command tare; tare remains physical.
+
+Product lookup checks the local catalogue first, then Open Food Facts v2 using Home Assistant's shared aiohttp session. Missing or invalid nutrient values remain unknown. Unknown products remain pending for manual catalogue insertion using the same barcode. If a positive weight has already been captured, the timeout is cancelled while waiting for manual product entry.
+
+When automatic save is disabled, or manual review is wanted, use food_diary.save_pending and food_diary.discard_pending. food_diary.get_status returns the acquisition state. Diagnostic sensor entities expose state, last barcode, last stable weight, scan count and pending-session attributes.
+
+Generic scanner fallback: if no ESPHome event arrives, one pending counter increment is resolved from the selected barcode entity after 800 ms. Multiple unmatched increments are marked ambiguous and are never auto-saved.
+
+The current pending session is held in memory; a Home Assistant restart during an incomplete/unknown-product session loses that pending session. The actual catalogue and diary remain in SQLite.
+
+Runtime code is still experimental and has not been loaded in Home Assistant or tested with the physical devices.
