@@ -5,7 +5,7 @@ from typing import Final
 DOMAIN: Final = "food_diary"
 
 CONF_WEIGHT_ENTITY: Final = "weight_entity"
-CONF_SCANNER_DEVICE: Final = "scanner_device_id"
+CONF_BARCODE_ENTITY: Final = "barcode_entity"
 
 CONF_DEFAULT_MEAL: Final = "default_meal"
 CONF_AUTO_SAVE: Final = "auto_save"
