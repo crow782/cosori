@@ -12,7 +12,7 @@ from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 
-from .acquisition import ScanSession, normalize_barcode, parse_weight_grams
+from .acquisition import (\n    ScanSession, normalize_barcode, parse_openfoodfacts_product, parse_weight_grams,\n)
 from .const import (
     CONF_AUTO_SAVE,
     CONF_BARCODE_ENTITY,
@@ -330,34 +330,18 @@ class FoodDiaryCoordinator:
                 return None
             response.raise_for_status()
             payload = await response.json(content_type=None)
-        if payload.get("status") != 1:
+        parsed = parse_openfoodfacts_product(payload, barcode)
+        if parsed is None:
             return None
-        product = payload.get("product") or {}
-        name = (product.get("product_name") or "").strip()
-        if not name:
-            return None
-        nutriments = product.get("nutriments") or {}
-        energy = nutriments.get("energy-kcal_100g")
-        if energy is None and nutriments.get("energy-kj_100g") is not None:
-            energy = float(nutriments["energy-kj_100g"]) / 4.184
-        nutrient_map = {
-            "energy_kcal": energy,
-            "protein_g": nutriments.get("proteins_100g"),
-            "carbohydrates_g": nutriments.get("carbohydrates_100g"),
-            "sugars_g": nutriments.get("sugars_100g"),
-            "fat_g": nutriments.get("fat_100g"),
-            "saturated_fat_g": nutriments.get("saturated-fat_100g"),
-            "fiber_g": nutriments.get("fiber_100g"),
-            "salt_g": nutriments.get("salt_100g"),
-        }
+
         # add_food has keyword-only optional fields; keep it in a small closure
         def save_food():
             return self.store.add_food(
-                name,
-                brand=product.get("brands"),
-                barcode=barcode,
-                nutrients_per_100g=nutrient_map,
-                source="openfoodfacts",
+                parsed["name"],
+                brand=parsed["brand"],
+                barcode=parsed["barcode"],
+                nutrients_per_100g=parsed["nutrients_per_100g"],
+                source=parsed["source"],
             )
         try:
             return await self.hass.async_add_executor_job(save_food)
