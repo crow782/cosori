@@ -131,6 +131,25 @@ class CoordinatorConcurrencyTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(coordinator._session.weight_g)
         self.assertEqual(coordinator.state, "restored_waiting_for_zero")
 
+    async def test_unload_and_restart_restore_persisted_barcode(self):
+        coordinator, store = make()
+
+        async def no_lookup(barcode):
+            return None
+
+        coordinator._async_lookup_product = no_lookup
+        await coordinator._async_begin_scan("8017596008299")
+        self.assertIsNotNone(store.pending)
+        await coordinator.async_stop()
+        self.assertIsNone(coordinator._session)
+        self.assertIsNotNone(store.pending)
+
+        restarted, _ = make(store)
+        await restarted._async_restore_pending_session()
+        self.assertEqual(restarted._session.barcode, "8017596008299")
+        self.assertFalse(restarted._session.zero_seen)
+        self.assertIsNone(restarted._session.weight_g)
+
     async def test_duplicate_barcode_event_is_consumed_once(self):
         coordinator, _ = make()
         coordinator._pending_counter_events = 1
