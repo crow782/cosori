@@ -399,3 +399,19 @@ Modifiche pubblicate sul branch `waage+scanner`:
 Il fake HA verifica l'orchestrazione del coordinatore, non sostituisce i test di integrazione con Home Assistant Core 2026.11.3. La nuova suite non è ancora stata eseguita da GitHub Actions: avviare manualmente `Food Diary prototype checks` selezionando il branch `waage+scanner`. Non usare "Re-run all jobs" sul vecchio run #5: serve una nuova esecuzione sul commit più recente.
 
 Restano da verificare in ambiente HA reale/fisico: eventi e tempi reali ESPHome, config flow/options flow, setup/unload, API dei servizi, frontend, migrazione e recupero dopo crash. Nessuna modifica è stata fatta al firmware attivo o ai package HA attivi.
+
+
+## Recupero SQLite e suite coordinator — aggiornamento
+
+Ulteriori protezioni aggiunte dopo la prima suite fake-HA:
+- se la lettura della sessione pendente fallisce per un errore SQLite, l'integrazione segnala `storage_error` e non elimina né sovrascrive il record;
+- timestamp o ID corrotti vengono rilevati; il record viene rimosso solo se la cancellazione SQLite riesce;
+- se la ricerca del prodotto nel catalogo fallisce per errore SQLite, il barcode pendente resta in memoria e lo stato diventa `storage_error`, invece di essere classificato erroneamente come prodotto sconosciuto;
+- la risoluzione dopo inserimento manuale gestisce allo stesso modo gli errori di lettura SQLite.
+
+La suite `test_coordinator.py` ora copre anche:
+- sessione persistita attraverso unload e ripristinata da una nuova istanza del coordinatore;
+- errori SQLite durante restore e lookup catalogo;
+- burst di due incrementi del contatore rifiutato senza associare un barcode arbitrario.
+
+Tutti questi test sono inclusi automaticamente dal workflow perché usa il pattern `test_*.py`. Non sono ancora stati eseguiti: avviare una nuova run manuale sul branch `waage+scanner`. Il run #5 verde riguarda un commit precedente e non verifica queste modifiche.
