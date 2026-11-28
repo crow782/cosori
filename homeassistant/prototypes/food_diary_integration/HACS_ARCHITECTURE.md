@@ -82,11 +82,11 @@ Un solo config entry locale per il diario, con Options Flow per cambiare le impo
 
 - **Bilancia:** entity selector filtrato su entità `sensor`, integrazione ESPHome e device class `weight`. L'utente sceglie il sensore di peso stabile, non inserisce MAC BLE o UUID GATT.
 - **Scanner:** entity selector generico sul dominio `sensor`; l'utente seleziona direttamente l'entità che pubblica l'ultimo barcode, ad esempio `sensor.barcode_scanner_last_barcode`. Non è richiesto un device selector né un identificatore aggiuntivo nel firmware.
-- **Barcode:** il runtime leggerà l'entità selezionata. Ascoltare `state_changed` e valutare `state_reported` con event_filter limitato all'entity_id selezionato, per gli aggiornamenti ripetuti senza variazione del valore. Verificare che ESPHome pubblichi ogni scansione identica; non assumere che `last_changed` cambi a ogni lettura. Se l'entità non viene aggiornata a ogni scansione, introdurre un evento dedicato o un attributo contatore nel firmware di sviluppo.
+- **Barcode:** il runtime leggerà l'entità selezionata. Ascoltare `state_changed` e valutare `state_reported` con event_filter limitato all'entity_id selezionato, per gli aggiornamenti ripetuti senza variazione del valore. L'utente ha verificato che `sensor.barcode_scanner_scan_count` incrementa a ogni lettura, anche quando il barcode non cambia. Selezionare anche questo contatore come entità `sensor`: il runtime ascolta `state_changed` sul contatore e legge il barcode dall'entità last_barcode. Verificare l'ordine di pubblicazione per evitare di leggere un barcode precedente.
 
 Per il firmware Cosori attuale, la selezione prevista è il sensore `Cosori Weight Stable` e il device ESPHome `Cosori Food Diary`. Non usare il sensore peso raw per la registrazione automatica.
 
-### Opzioni utente
+- **Contatore scansioni:** entity selector generico sul dominio `sensor`, ad esempio `sensor.barcode_scanner_scan_count`; trigger di ogni nuova lettura, comprese quelle ripetute.\n\n### Opzioni utente
 
 - pasto predefinito, modificabile per ogni registrazione;
 - salvataggio automatico quando barcode e peso stabile sono associati (abilitato secondo la preferenza già espressa);
