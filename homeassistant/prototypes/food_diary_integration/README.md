@@ -88,12 +88,10 @@ The config flow now asks for:
 
 The options flow allows changing all three entity selections and configuring default meal,
 automatic save, weight timeout, zero threshold, and Open Food Facts country,
-language and enablement. Both entities are validated against Home Assistant's
+language and enablement. All three entities are validated against Home Assistant's
 entity registry.
 
-The scanner is identified by its selected entity, not by an ESPHome device or
-event payload identifier. This avoids requiring a firmware change and allows
-other barcode readers that publish a sensor state. The user confirmed that `sensor.barcode_scanner_scan_count` increments on every scan, including repeated identical barcodes. Runtime should listen to `state_changed` on the selected counter and then read the selected barcode entity. Publication ordering must be tested to avoid pairing a new counter value with a stale barcode. The planned listener should account for both `state_changed` and, where emitted by the entity platform, `state_reported` events. Home Assistant can report an unchanged state through `state_reported`, but it must be verified whether the ESPHome text sensor republishes each identical scan. If it does not, a dedicated event or scan counter will be needed in a development firmware copy. No active firmware was changed.
+The scanner is configured through two generic sensor entities: `sensor.barcode_scanner_last_barcode` supplies the latest code, while `sensor.barcode_scanner_scan_count` increments on every scan, including repeated identical barcodes. The user confirmed this behavior on the current ESPHome device. Runtime should listen to `state_changed` on the selected counter and then read the selected barcode entity. Publication ordering must be tested to avoid pairing a new counter value with a stale barcode. This design does not require changes to the active firmware.
 
 ## Actions
 
@@ -135,7 +133,7 @@ files.
 
 The planned package includes the integration and its Aurora panel in one HACS
 integration repository. Setup will let the user select the ESPHome weight
-sensor and a generic barcode sensor entity through Home Assistant selectors. It will not ask
+sensor, the last-barcode sensor and the scan-counter sensor through Home Assistant selectors. It will not ask
 for BLE MAC addresses or GATT UUIDs.
 
 See [HACS_ARCHITECTURE.md](HACS_ARCHITECTURE.md) for the repository layout,
