@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import inspect
 import sys
 import types
 import unittest
@@ -61,7 +62,8 @@ class Hass:
 
     async def async_add_executor_job(self, fn, *args):
         await asyncio.sleep(0)
-        return fn(*args)
+        result = fn(*args)
+        return await result if inspect.isawaitable(result) else result
 
     def async_create_task(self, coro):
         return asyncio.create_task(coro)
