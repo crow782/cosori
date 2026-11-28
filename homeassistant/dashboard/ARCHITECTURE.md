@@ -147,7 +147,7 @@ La documentazione tecnica e gli esempi sono in `homeassistant/prototypes/food_di
 ## 11. Criteri di accettazione
 
 Prima di costruire tutta la dashboard:
-1. implementare lo scheletro dell'integrazione e lo schema SQLite;
+1. [x] implementare lo scheletro dell'integrazione e lo schema SQLite (prototipo isolato);
 2. testare creazione/ricerca prodotto e registrazione di due porzioni;
 3. riavviare Home Assistant e verificare che catalogo e diario siano presenti;
 4. modificare il prodotto e verificare che lo snapshot della vecchia porzione non cambi;
@@ -165,4 +165,4 @@ Solo dopo questi test si definiscono le entità definitive e si realizza la dash
 - Serve supporto per quantità diverse dai grammi (ml/unità)? Fuori dalla prima versione, salvo necessità concreta.
 
 ---
-Questa architettura è una proposta da verificare su una copia/ambiente di test. Non modifica il package attuale e non implica che l'integrazione sia già stata sviluppata.
+Questa architettura è una proposta da verificare su una copia/ambiente di test. Il codice prototipo esiste ma non è ancora collaudato né pronto per l'installazione. Il package attuale resta invariato.
