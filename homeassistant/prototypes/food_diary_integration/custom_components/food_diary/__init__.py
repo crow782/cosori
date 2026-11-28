@@ -24,7 +24,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Initialize the database and register Food Diary actions."""
     database_path = hass.config.path("food_diary", "food_diary.db")
     store = await hass.async_add_executor_job(FoodDiaryStore, database_path)
-    hass.data.setdefault(DOMAIN, {})["store"] = store
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    domain_data["store"] = store
+    domain_data["config"] = {**entry.data, **entry.options}
     async_setup_services(hass)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
@@ -40,5 +42,7 @@ async def _async_update_listener(
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unregister actions and release the store reference."""
     async_unload_services(hass)
-    hass.data.get(DOMAIN, {}).pop("store", None)
+    domain_data = hass.data.get(DOMAIN, {})
+    domain_data.pop("store", None)
+    domain_data.pop("config", None)
     return True
