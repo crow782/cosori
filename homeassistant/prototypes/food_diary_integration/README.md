@@ -92,10 +92,7 @@ entity registry.
 
 The scanner is identified by its selected entity, not by an ESPHome device or
 event payload identifier. This avoids requiring a firmware change and allows
-other barcode readers that publish a sensor state. Runtime listening and
-repeated-identical-barcode handling still need implementation and testing: a
-state-only listener may not observe a scan when the sensor state remains
-unchanged. No active firmware was changed.
+other barcode readers that publish a sensor state. Runtime listening still needs implementation and testing. The planned listener should account for both `state_changed` and, where emitted by the entity platform, `state_reported` events. Home Assistant can report an unchanged state through `state_reported`, but it must be verified whether the ESPHome text sensor republishes each identical scan. If it does not, a dedicated event or scan counter will be needed in a development firmware copy. No active firmware was changed.
 
 ## Actions
 
@@ -142,6 +139,8 @@ for BLE MAC addresses or GATT UUIDs.
 
 See [HACS_ARCHITECTURE.md](HACS_ARCHITECTURE.md) for the repository layout,
 configurable fields, panel strategy, compatibility policy and release gates.
+
+For the exact handoff state and the next tasks, see [RESUME.md](RESUME.md).
 
 ## Validation status
 
