@@ -143,3 +143,40 @@ Prima di creare il componente Home Assistant vero e proprio:
 - controllare i risultati della matrice Python;
 - fissare la versione minima di Home Assistant supportata e la modalità d'installazione (HACS/manuale) in base alla versione Core effettiva;
 - solo dopo creare il componente sperimentale in una cartella separata, senza copiarlo nella configurazione attiva.
+
+## Fase 3 – prima integrazione Home Assistant isolata
+
+**Obiettivo:** definire e realizzare il primo adattatore tra il livello SQLite e le azioni native di Home Assistant, senza installarlo nell'istanza attiva.
+
+**Nuova cartella:** `homeassistant/prototypes/food_diary_integration/`
+
+**File creati:**
+- `custom_components/food_diary/manifest.json`: metadati e versione prototipo;
+- `__init__.py`: inizializzazione, config entry e percorso database previsto;
+- `config_flow.py`: configurazione UI con una sola istanza;
+- `const.py`: costanti di dominio;
+- `services.py`: registrazione azioni, validazione e dispatch SQLite nell'executor;
+- `services.yaml` e `strings.json`: descrizioni e traduzioni delle azioni;
+- `storage.py`: copia autonoma del livello SQLite;
+- `README.md`: architettura, azioni, esempi e limiti.
+
+**Azioni implementate nel prototipo:**
+- `add_food`, `update_food`, `delete_food`;
+- `search_foods`, `find_food_by_barcode`;
+- `add_entry`, `list_entries`, `delete_entry`;
+- `period_summary`.
+
+Le azioni di lettura restituiscono dati strutturati con il meccanismo response-data di Home Assistant. Le azioni di modifica che possono restituire il record creato/aggiornato supportano risposta opzionale. Le operazioni SQLite sincrone vengono eseguite tramite executor, non nel loop asincrono. Errori di validazione e barcode duplicati vengono convertiti in errori azione leggibili.
+
+**CI aggiornata:** la workflow compila i file Python dell'integrazione, valida i JSON, confronta la copia `storage.py` con il modulo standalone e lancia i test SQLite. La matrice è Python 3.10–3.13.
+
+**Stato:** codice sorgente e documentazione sono stati aggiunti al branch. L'integrazione non è stata caricata in Home Assistant e non ha ancora superato hassfest, test di integrazione o test runtime. La prima esecuzione GitHub Actions non è ancora visibile al momento dell'aggiornamento.
+
+**Vincoli ancora necessari prima di installare:**
+1. verificare la versione esatta di Home Assistant Core e la compatibilità API;
+2. eseguire CI e correggere eventuali errori;
+3. verificare il flusso di configurazione e le risposte delle azioni in un'istanza di test/backup;
+4. aggiungere test HA per setup/unload e servizi;
+5. implementare sensori/aggiornamento UI, Open Food Facts e flusso Cosori/GM67 in fasi successive.
+
+La struttura usa l'attuale modello Home Assistant di registrazione delle azioni in `async_setup` e di risposte strutturate. Riferimento tecnico: documentazione ufficiale "Integration service actions" (link nel README del prototipo).
