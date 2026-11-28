@@ -254,6 +254,10 @@
     "search_openfoodfacts": {
       "name": "Search Open Food Facts alternatives",
       "description": "Search alternative products by name. Results are not added to the catalogue automatically."
+    },
+    "get_dashboard_data": {
+      "name": "Get dashboard data",
+      "description": "Return period summary, diary entries and local catalogue for the Aurora dashboard."
     }
   }
 }
