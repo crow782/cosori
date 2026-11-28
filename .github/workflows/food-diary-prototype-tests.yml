@@ -6,6 +6,7 @@ on:
       - "waage+scanner"
     paths:
       - "homeassistant/prototypes/food_diary_sqlite/**"
+      - "homeassistant/prototypes/food_diary_integration/**"
       - ".github/workflows/food-diary-prototype-tests.yml"
   pull_request:
     paths:
@@ -36,5 +37,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Compile source and tests
         run: python -m py_compile storage.py tests/test_storage.py
+      - name: Compile integration prototype
+        run: python -m py_compile ../food_diary_integration/custom_components/food_diary/*.py
+      - name: Validate integration JSON metadata
+        run: |
+          python -m json.tool ../food_diary_integration/custom_components/food_diary/manifest.json > /dev/null
+          python -m json.tool ../food_diary_integration/custom_components/food_diary/strings.json > /dev/null
+      - name: Ensure bundled SQLite store matches standalone prototype
+        run: cmp storage.py ../food_diary_integration/custom_components/food_diary/storage.py
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
