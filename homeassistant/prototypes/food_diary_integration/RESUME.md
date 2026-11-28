@@ -265,8 +265,26 @@ A dependency-free custom Lovelace card is now present at custom_components/food_
 
 The integration serves the asset at /food_diary/food-diary-card.js using the HTTP static-path API. The user must still add the resource once in Settings → Dashboards → Resources (module type); automatic Lovelace resource registration was deliberately avoided because no stable public registration API was identified. Example dashboard YAML is in homeassistant/prototypes/food_diary_dashboard/dashboard.yaml. The card and static route have not been tested in HA Core 2026.11.3.
 
-## 11. Decisione utente ancora aperta
+## 11. Sessione pendente persistente — decisione confermata e implementata
 
-Prima di estendere lo storage, chiedere se le sessioni scanner/peso incomplete devono sopravvivere a un riavvio di Home Assistant. Attualmente sono solo in memoria e vengono perse a restart o reload delle opzioni. Se l'utente vuole il ripristino, aggiungere una tabella SQLite dedicata con stato sessione, barcode, peso, timestamp, zero_seen, prodotto associato e scadenza; ripristinare solo sessioni non scadute e richiedere una nuova conferma/peso quando necessario.
+L'utente ha confermato il ripristino delle sessioni scanner incomplete dopo riavvio/reload HA. Implementazione su schema SQLite v3:
+- tabella pending_sessions con un solo slot attivo; conserva session_id, barcode, created_at, expires_at, updated_at;
+- retention fissa 24 ore; il timeout configurabile per attesa peso rimane separato;
+- il peso misurato e zero_seen NON vengono persistiti come dati affidabili;
+- al ripristino si recupera il barcode e si prova a risolvere il prodotto dal catalogo locale; la sessione torna in stato restored_waiting_for_zero oppure unknown_product;
+- dopo restart è obbligatorio effettuare una nuova tara/zero e una nuova pesata stabile positiva. Non si salva mai usando il peso precedente al riavvio;
+- se il prodotto è sconosciuto, il barcode resta disponibile per inserimento manuale/ricerca OFF;
+- scadenza 24h, timeout pesata, annullamento e salvataggio completato eliminano il record;
+- creazione della registrazione e cancellazione della sessione pendente sono nella stessa transazione SQLite, evitando un doppio salvataggio se HA si arresta tra le due operazioni;
+- migrazione da schema v2 a v3 automatica, senza cancellare catalogo o storico;
+- test aggiunti per persistenza/reopen, singola sessione, delete condizionale, validazione scadenza e completamento atomico.
 
-La card Aurora è servita dall'integrazione ma richiede l'aggiunta manuale una tantum della risorsa Lovelace. Si è evitata l'auto-registrazione tramite API interne non documentate; l'utente può in seguito chiedere un diverso compromesso se desidera zero passaggi manuali.
+La sessione non viene eliminata da async_stop: un reload dell'integrazione deve poterla ripristinare. La risorsa Lovelace continua a richiedere l'aggiunta manuale una tantum.
+
+## 12. Cosa resta da fare
+
+1. Attendere ed esaminare il risultato del workflow GitHub Actions (Python compileall, JavaScript syntax check, JSON, copie storage, test SQLite e test acquisition).
+2. Eseguire i test di integrazione dentro Home Assistant Core 2026.11.3, soprattutto migrazione DB v2→v3, ripristino dopo riavvio, timeout, annullamento e salvataggio atomico.
+3. Verificare un caso reale: scansione nota con peso in attesa → riavvio HA → sessione ripristinata senza peso → nuova tara → nuova pesata → una sola registrazione.
+4. Verificare un caso sconosciuto: scansione → riavvio → barcode ancora presente → inserimento manuale alimento → nuova tara/pesata → una sola registrazione.
+5. Solo dopo questi test considerare il prototipo pronto per una copia di prova isolata; non installarlo ancora nell'istanza HA attiva.
