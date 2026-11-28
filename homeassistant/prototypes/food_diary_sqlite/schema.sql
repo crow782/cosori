@@ -1,5 +1,5 @@
 PRAGMA foreign_keys = ON;
-PRAGMA user_version = 2;
+PRAGMA user_version = 3;
 
 CREATE TABLE IF NOT EXISTS foods (
     id TEXT PRIMARY KEY,
@@ -46,3 +46,17 @@ CREATE TABLE IF NOT EXISTS entries (
 
 CREATE INDEX IF NOT EXISTS idx_entries_consumed_at ON entries(consumed_at);
 CREATE INDEX IF NOT EXISTS idx_entries_meal ON entries(meal_type);
+
+-- One active scanner session at a time. The measured weight is deliberately
+-- not stored: after restart, the user must tare and weigh again.
+CREATE TABLE IF NOT EXISTS pending_sessions (
+    slot TEXT PRIMARY KEY CHECK (slot = 'active'),
+    session_id TEXT NOT NULL UNIQUE,
+    barcode TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_pending_sessions_expiry
+    ON pending_sessions(expires_at);
