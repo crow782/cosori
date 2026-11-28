@@ -20,6 +20,7 @@ The package also defines a `rest_command` for Open Food Facts. No API key is nee
 The package expects:
 - Barcode scanner event: `esphome.barcode_scanned`, with `barcode`.
 - Stable scale entity: `sensor.cosori_weight_stable`.
+- ESPHome action on the scanner: `esphome.barcode_scanner_show_food_result` (created by the updated scanner firmware).
 
 Check the actual entity ID in Home Assistant and adjust the package if you renamed the ESPHome entity. In the ESPHome device integration options, enable **Allow the device to perform Home Assistant actions** for the barcode scanner; otherwise it cannot fire the event.
 
@@ -31,7 +32,8 @@ Check the actual entity ID in Home Assistant and adjust the package if you renam
 4. Add the food to the plate.
 5. When `Cosori Weight Stable` becomes positive, Home Assistant pairs barcode and net weight.
 6. Home Assistant calls Open Food Facts API v3 and loads product name, brand, package quantity and available nutrient values per 100 g.
-7. Template sensors calculate the nutrients for the weighed portion.
+7. Home Assistant calculates the calories for the weighed portion, adds them to the cumulative kcal helper when energy data exists, and calls the ESPHome action to update the OLED.
+8. The OLED shows product, weight, portion kcal and cumulative kcal. Products without energy data and unknown barcodes are reported without increasing the total.
 
 The pending barcode is cleared after pairing, so it cannot be reused by a later weight change. Tare again before scanning the next product.
 
@@ -46,6 +48,8 @@ Helpers:
 - `input_text.food_diary_nutriments_json`
 - `input_text.food_diary_lookup_status`
 - `input_number.food_diary_last_weight_g`
+- `input_number.food_diary_total_kcal` (persistent cumulative calorie total)
+- `input_button.food_diary_reset_total_kcal` (manual reset)
 
 Calculated portion sensors:
 - `sensor.food_diary_portion_energy` (kcal)
@@ -65,7 +69,7 @@ The integration uses `GET /api/v3/product/{barcode}` on `world.openfoodfacts.org
 
 ## Current scope and limitations
 
-This version performs barcode lookup and calculates nutrient amounts for the latest weighed portion. It does **not yet**:
+This version performs barcode lookup, calculates nutrient amounts for the latest weighed portion and maintains a cumulative kcal counter until manually reset. It does **not yet**:
 - save a multi-entry historical food diary;
 - group entries by breakfast/lunch/dinner/snack or calculate daily totals;
 - provide the manual product-entry form or alternative text search when a barcode is absent.
