@@ -109,3 +109,37 @@ I subtotali sono somme, non medie. Una futura UI potrà calcolare e mostrare anc
 ## Stato dei file originali
 
 Il lavoro descritto in questo registro riguarda esclusivamente la cartella del prototipo. Il package attivo e il firmware ESPHome non fanno parte di questa fase e non devono essere considerati modificati.
+
+## Fase 2 – precisione timestamp, migrazione e CI
+
+**Motivazione:** le aggregazioni usano intervalli UTC con estremi inclusivi/esclusivi. Per evitare ordinamenti ambigui e perdita di precisione, i nuovi timestamp vengono salvati sempre con sei cifre decimali.
+
+**Interventi:**
+1. `_now()` e `_timestamp()` ora conservano i microsecondi.
+2. Incrementata la versione dello schema SQLite a 2 tramite `PRAGMA user_version`.
+3. All'apertura, un database versione 1 viene migrato normalizzando i timestamp delle registrazioni già presenti a UTC con sei cifre decimali. Questo evita che le righe storiche al confine di mezzanotte vengano escluse dai nuovi intervalli.
+4. Database con una versione superiore a quella supportata vengono rifiutati esplicitamente.
+5. `period_summary` rifiuta un `datetime` passato al posto di una `date`, per evitare date con orario implicito.
+6. Aggiornato `schema.sql` alla versione 2.
+
+**Test aggiunti:**
+- conservazione dei microsecondi e conversione in UTC;
+- migrazione di un database versione 1 con timestamp al secondo;
+- verifica che una registrazione esattamente sul confine sia inclusa dopo la migrazione;
+- riepilogo vuoto;
+- separazione dicembre/gennaio;
+- febbraio bisestile;
+- rifiuto di un oggetto `datetime` come `anchor_date`;
+- verifica della versione schema.
+
+**CI aggiunta:** `.github/workflows/food-diary-prototype-tests.yml` esegue compilazione e unit test su Python 3.10, 3.11, 3.12 e 3.13 quando cambiano i file del prototipo, sulle pull request pertinenti o manualmente da GitHub Actions.
+
+**Stato test:** i test sono stati aggiunti e la workflow CI è stata committata, ma al momento della documentazione l'API GitHub non mostra ancora alcuna esecuzione. Quindi i test non sono da considerare superati.
+
+## Passaggio successivo
+
+Prima di creare il componente Home Assistant vero e proprio:
+- attendere/verificare una esecuzione CI;
+- controllare i risultati della matrice Python;
+- fissare la versione minima di Home Assistant supportata e la modalità d'installazione (HACS/manuale) in base alla versione Core effettiva;
+- solo dopo creare il componente sperimentale in una cartella separata, senza copiarlo nella configurazione attiva.
