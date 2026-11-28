@@ -175,9 +175,11 @@ Cartella: `homeassistant/prototypes/food_diary_sqlite/`
 - [x] Aggiunto un livello dati Python indipendente da Home Assistant, basato su SQLite standard.
 - [x] Aggiunto schema SQL leggibile.
 - [x] Aggiunti test automatici per catalogo, barcode duplicati, snapshot nutrizionali, persistenza dopo riapertura, valori sconosciuti e integrità.
-- [ ] Eseguire i test in un ambiente Python locale: il tentativo di clonare il repository nell'ambiente di lavoro non è riuscito per indisponibilità DNS/rete.
+- [ ] Eseguire i test in un ambiente Python locale: i test aggiornati sono scritti ma non ancora eseguiti.
 - [ ] Eseguire gli stessi test con la versione Python effettivamente usata dall'installazione Home Assistant.
-- [ ] Aggiungere query aggregate per giorno, settimana e mese.
+- [x] Aggiungere query aggregate per giorno, settimana e mese nel prototipo isolato (somma nutrienti, dettaglio giornaliero e subtotali per pasto; settimana lunedì–domenica; fuso IANA).
+- [x] Correggere l'aggiornamento parziale dei nutrienti: i campi omessi vengono preservati e solo i campi esplicitamente impostati a `None` vengono cancellati.
+- [x] Documentare API, decisioni, comandi di test e stato delle verifiche in `homeassistant/prototypes/food_diary_sqlite/DEVELOPMENT_LOG.md`.
 - [ ] Solo dopo i test, realizzare l'integrazione Home Assistant vera e propria.
 
 **Nota di isolamento:** nessun file in `homeassistant/packages/` o `esphome/` è stato modificato. Il prototipo non è installabile e non deve essere copiato nella configurazione attiva.
