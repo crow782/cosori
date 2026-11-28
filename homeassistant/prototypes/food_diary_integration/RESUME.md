@@ -264,3 +264,9 @@ I test acquisition caricano direttamente il modulo puro senza importare il packa
 A dependency-free custom Lovelace card is now present at custom_components/food_diary/www/food-diary-card.js. It uses the documented Home Assistant custom-card contract and hass.callService return responses; it calls get_dashboard_data, get_status, add_entry, add_food, delete_entry, search_openfoodfacts, save_pending and discard_pending. It displays day/week/month totals, missing-data days, partial nutrient coverage, meal entries, scanner status, manual portion/product forms and Open Food Facts alternatives.
 
 The integration serves the asset at /food_diary/food-diary-card.js using the HTTP static-path API. The user must still add the resource once in Settings → Dashboards → Resources (module type); automatic Lovelace resource registration was deliberately avoided because no stable public registration API was identified. Example dashboard YAML is in homeassistant/prototypes/food_diary_dashboard/dashboard.yaml. The card and static route have not been tested in HA Core 2026.11.3.
+
+## 11. Decisione utente ancora aperta
+
+Prima di estendere lo storage, chiedere se le sessioni scanner/peso incomplete devono sopravvivere a un riavvio di Home Assistant. Attualmente sono solo in memoria e vengono perse a restart o reload delle opzioni. Se l'utente vuole il ripristino, aggiungere una tabella SQLite dedicata con stato sessione, barcode, peso, timestamp, zero_seen, prodotto associato e scadenza; ripristinare solo sessioni non scadute e richiedere una nuova conferma/peso quando necessario.
+
+La card Aurora è servita dall'integrazione ma richiede l'aggiunta manuale una tantum della risorsa Lovelace. Si è evitata l'auto-registrazione tramite API interne non documentate; l'utente può in seguito chiedere un diverso compromesso se desidera zero passaggi manuali.
