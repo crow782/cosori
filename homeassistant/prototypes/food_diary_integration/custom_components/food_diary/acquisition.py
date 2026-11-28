@@ -55,8 +55,15 @@ class ScanSession:
     error: str | None = None
 
     def observe_weight(self, weight_g: float | None, zero_threshold_g: float) -> None:
-        """Require a zero baseline after the scan before accepting positive weight."""
-        if weight_g is None:
+        """Require a fresh valid reading after zero; never retain stale weight."""
+        if weight_g is None or weight_g < 0:
+            # Unknown/unavailable/invalid readings invalidate any previously
+            # accepted portion. A later positive reading must be observed anew.
+            self.weight_g = None
+            if self.zero_seen:
+                self.status = "waiting_for_weight" if self.food is not None else "waiting_for_product"
+            else:
+                self.status = "waiting_for_zero"
             return
         if weight_g <= zero_threshold_g:
             self.zero_seen = True
@@ -64,7 +71,7 @@ class ScanSession:
             if self.food is not None:
                 self.status = "waiting_for_weight"
             return
-        if self.zero_seen and weight_g > zero_threshold_g:
+        if self.zero_seen:
             self.weight_g = weight_g
             self.status = "ready" if self.food is not None else "waiting_for_product"
 
