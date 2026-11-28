@@ -119,9 +119,11 @@ class FoodDiaryStoreTests(unittest.TestCase):
         self.assertIsNone(summary["totals"]["energy_kcal"])
         self.assertEqual(summary["entry_count"], 1)
 
-    def test_period_summary_rejects_invalid_period(self):
+    def test_period_summary_rejects_invalid_period_and_timezone(self):
         with self.assertRaises(ValueError):
             self.store.period_summary("year", "2026-11-28", "Europe/Rome")
+        with self.assertRaises(ValueError):
+            self.store.period_summary("day", "2026-11-28", "Not/A_Real_Zone")
 
     def test_integrity(self):
         self.assertEqual(self.store.integrity_check(), "ok")
