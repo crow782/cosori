@@ -182,6 +182,8 @@ Cartella: `homeassistant/prototypes/food_diary_sqlite/`
 - [x] Aggiungere query aggregate per giorno, settimana e mese nel prototipo isolato (somma nutrienti, dettaglio giornaliero e subtotali per pasto; settimana lunedì–domenica; fuso IANA).
 - [x] Correggere l'aggiornamento parziale dei nutrienti: i campi omessi vengono preservati e solo i campi esplicitamente impostati a `None` vengono cancellati.
 - [x] Documentare API, decisioni, comandi di test e stato delle verifiche in `homeassistant/prototypes/food_diary_sqlite/DEVELOPMENT_LOG.md`.
+- [x] Aggiungere versionamento schema SQLite e migrazione v1→v2 per timestamp a precisione uniforme.
+- [x] Aggiungere workflow GitHub Actions con matrice Python 3.10–3.13; [ ] verificare la prima esecuzione CI.
 - [ ] Solo dopo i test, realizzare l'integrazione Home Assistant vera e propria.
 
 **Nota di isolamento:** nessun file in `homeassistant/packages/` o `esphome/` è stato modificato. Il prototipo non è installabile e non deve essere copiato nella configurazione attiva.
