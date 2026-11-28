@@ -19,6 +19,11 @@ def _load_module():
     core.callback = lambda fn: fn
     aio = types.ModuleType("homeassistant.helpers.aiohttp_client")
     aio.async_get_clientsession = lambda hass: None
+    http = types.ModuleType("aiohttp")
+    http.ClientError = OSError
+    http.TimeoutError = asyncio.TimeoutError
+    http.ClientTimeout = lambda **kwargs: None
+    sys.modules.setdefault("aiohttp", http)
     events = types.ModuleType("homeassistant.helpers.event")
     events.async_call_later = lambda *args: (lambda: None)
     events.async_track_state_change_event = lambda *args: (lambda: None)
