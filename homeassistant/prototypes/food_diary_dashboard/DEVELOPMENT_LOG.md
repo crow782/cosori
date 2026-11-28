@@ -70,3 +70,19 @@ Verifica del firmware combinato: il sensore da selezionare per il peso è `Cosor
 Nota: il prototipo config flow corrente è incompleto (schema UI non implementato) e il manifest non soddisfa ancora i requisiti di pubblicazione HACS. Il prototipo non è installabile e non va presentato come pronto.
 
 Nessun package o firmware attivo è stato modificato. Nessun test su Home Assistant reale è stato eseguito.
+
+
+## Fase 7 — Configurazione guidata iniziale
+
+Implementati nel prototipo:
+- config flow con selettore del sensore ESPHome di classe `weight`;
+- selettore del device ESPHome usato come scanner;
+- validazione lato backend rispetto a entity registry e device registry;
+- options flow per cambiare sensore/scanner e configurare pasto predefinito, salvataggio automatico, timeout, soglia zero e Open Food Facts;
+- traduzioni in inglese e italiano sotto `translations/`;
+- registrazione delle azioni HA spostata nel ciclo di vita del config entry; le azioni vengono rimosse allo scaricamento;
+- ricaricamento dell'integrazione quando cambiano le opzioni.
+
+**Limite bloccante noto:** il firmware ESPHome attuale emette `esphome.barcode_scanned` con il solo campo `barcode`. Per filtrare le scansioni in base al device selezionato serve aggiungere un identificatore stabile del nodo nel payload e verificarne la corrispondenza col device registry. Il firmware attivo non è stato modificato.
+
+**Validazione:** il codice è stato scritto su GitHub, ma non è stato eseguito dentro Home Assistant 2026.11.3; non sono ancora passati hassfest, test config flow, test d'integrazione o test su dispositivo.
