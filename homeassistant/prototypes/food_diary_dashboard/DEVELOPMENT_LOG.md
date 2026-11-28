@@ -7,30 +7,31 @@ Creato `index.html` come anteprima statica responsive in stile Aurora. I dati so
 Creato `DESIGN.md` con layout, palette, requisiti responsive, distinzione tra peso live e porzione registrata, e principi per nutrienti sconosciuti.
 
 ## Fase 2 — Flussi UX e storico
-Aggiunto `flows.html` con tre aree di progettazione:
-- registrazione manuale di una porzione da catalogo, con quantità, pasto, data/ora e anteprima;
-- form separato per creare una scheda alimento, con barcode e nutrienti facoltativi;
-- storico dimostrativo a 7 giorni/mese, totali, media e riepilogo per giorno.
+Aggiunto `flows.html` con registrazione manuale porzione, creazione scheda alimento e storico dimostrativo. Le azioni di salvataggio non persistono dati. Il grafico ora distingue visivamente il giorno senza registrazioni.
 
-Le azioni di salvataggio non persistono dati: mostrano un messaggio esplicito che ricorda che si tratta di un prototipo.
+## Fase 3 — Decisioni statistiche confermate
+- I giorni senza registrazioni sono "nessun dato", non zero kcal.
+- La media giornaliera esclude i giorni senza registrazioni.
+- Il totale periodo somma tutte le registrazioni nell'intervallo.
+- I nutrienti sconosciuti restano null, mai zero.
+- Le registrazioni con kcal mancanti richiedono un indicatore di copertura, per non presentare una media parziale come completa.
 
-## Scelte UX fissate
-- Il prodotto (catalogo) e la porzione consumata (diario) sono entità distinte.
-- Il pasto è scelto nella registrazione, non nella scheda alimento.
-- Il peso è espresso in grammi; energia in kcal.
-- Nutrienti mancanti rimangono non disponibili e non vengono convertiti in zero.
-- La settimana inizia lunedì; il fuso definitivo sarà quello configurato in Home Assistant.
-- **Giorni senza registrazioni:** rappresentati come "nessun dato", non come zero kcal.
-- **Media giornaliera:** calcolata solo sui giorni con almeno una registrazione.
-- **Totale periodo:** somma di tutte le registrazioni nell'intervallo.
-- Nei grafici i giorni senza dati devono avere una rappresentazione distinta da un giorno con registrazioni e totale zero.
-- Nessun obiettivo calorico viene presunto o mostrato se non configurato.
+## Fase 4 — Contratto dati
+Creato `DATA_CONTRACT.md` dopo aver verificato il codice reale di storage e delle azioni Home Assistant. Il documento separa le funzioni già implementate dalle estensioni ancora necessarie:
+- catalogo e registrazioni sono entità distinte;
+- le registrazioni mantengono snapshot di alimento e nutrienti;
+- le azioni attualmente registrate sono elencate con input/output;
+- il flusso scanner/bilancia è modellato a stati;
+- è evidenziato il gap tra riepilogo attuale e media/coverage che la UI dovrà mostrare;
+- la scelta tra card Lovelace native e custom card resta aperta fino alla verifica della versione HA e delle API frontend.
 
-## Verifiche
-- File HTML e CSS scritti senza librerie esterne.
+## Verifiche e limiti
+- I file HTML/CSS non usano librerie esterne.
 - Non è stata eseguita una prova browser automatizzata né una verifica su dispositivi reali.
 - Non è stata eseguita alcuna connessione a Home Assistant.
+- Le unit test SQLite non sono state eseguite in questo passaggio.
+- La copia storage dell'integrazione e il modulo SQLite autonomo risultano allo stesso SHA Git al momento della verifica.
 - Nessun file in `homeassistant/packages/` o `esphome/` è stato modificato.
 
 ## Prossimo passo
-Definire il contratto tra UI e servizi dell'integrazione sperimentale, poi verificare backend e rendering. Solo dopo i test backend si potrà costruire la dashboard Lovelace effettiva.
+Estendere e testare il contratto riepiloghi nel backend (coverage nutrienti e media con denominatore esplicito), quindi verificare l'integrazione su una istanza HA di prova. Dopo aver conosciuto la versione Home Assistant effettiva, scegliere il frontend e collegare le viste.
