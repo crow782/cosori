@@ -174,6 +174,10 @@ class FoodDiaryCoordinator:
             return
         current = self._parse_counter(new_state.state)
         if current is None:
+            self._pending_counter_events = 0
+            if self._fallback_cancel:
+                self._fallback_cancel()
+                self._fallback_cancel = None
             self.last_error = "invalid_scan_counter"
             self.state = "sensor_error"
             self._notify()
@@ -189,6 +193,9 @@ class FoodDiaryCoordinator:
         if current < previous:
             # ESPHome reboot/restore reset: rebase, never interpret as a scan.
             self._pending_counter_events = 0
+            if self._fallback_cancel:
+                self._fallback_cancel()
+                self._fallback_cancel = None
             self.last_error = "scan_counter_reset"
             self.state = "ready"
             self._notify()
