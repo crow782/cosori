@@ -575,12 +575,14 @@ class FoodDiaryCoordinator:
         )
         if self._session.weight_g is not None:
             self._cancel_timeout()
-        if not self._session.zero_seen:
-            self.state = "waiting_for_zero"
-        elif self._session.weight_g is not None:
-            self.state = "waiting_for_product" if self._session.food is None else "ready_to_save"
+            if self._session.zero_seen:
+                self.state = "waiting_for_product" if self._session.food is None else "ready_to_save"
         else:
-            self.state = "waiting_for_weight" if self._session.food else "unknown_product"
+            self.state = (
+                "waiting_for_zero"
+                if not self._session.zero_seen
+                else ("waiting_for_weight" if self._session.food else "unknown_product")
+            )
             if self._timeout_cancel is None:
                 self._timeout_cancel = async_call_later(
                     self.hass, int(self.config[CONF_WEIGHT_TIMEOUT]), self._async_timeout
