@@ -443,6 +443,15 @@ class FoodDiaryCoordinator:
                 await self._async_persist_session()
             except Exception:
                 _LOGGER.exception("Unable to persist pending Food Diary scan")
+                # A failed executor operation must not leave an orphaned row
+                # that unexpectedly reappears after a later HA restart.
+                if self._session_id:
+                    try:
+                        await self.hass.async_add_executor_job(
+                            self.store.delete_pending_session, self._session_id
+                        )
+                    except Exception:
+                        _LOGGER.exception("Unable to clean up failed pending scan")
                 self._session = None
                 self._clear_session_metadata()
                 self._cancel_timeout()
@@ -467,6 +476,11 @@ class FoodDiaryCoordinator:
         self._notify()
 
     async def _async_lookup_product(self, barcode: str) -> None:
+        # Bind this asynchronous lookup to the exact session that started it.
+        # Barcode equality alone is insufficient: a later scan can reuse it.
+        session = self._session
+        if session is None or session.barcode != barcode:
+            return
         try:
             food = await self.hass.async_add_executor_job(
                 self.store.find_food_by_barcode, barcode
@@ -477,18 +491,18 @@ class FoodDiaryCoordinator:
             _LOGGER.warning("Food Diary product lookup failed: %s", err)
             self.last_error = "product_lookup_failed"
             food = None
-        if self._session is None or self._session.barcode != barcode:
+        if self._session is not session:
             return
         if food is None:
-            self._session.status = "unknown_product"
+            session.status = "unknown_product"
             self.state = "unknown_product"
             self.last_error = self.last_error or "product_not_found"
-            if self._session.weight_g is not None:
+            if session.weight_g is not None:
                 self._cancel_timeout()
         else:
-            self._session.food = food
-            self._session.status = "waiting_for_weight"
-            self.state = "waiting_for_zero" if not self._session.zero_seen else "waiting_for_weight"
+            session.food = food
+            session.status = "waiting_for_weight"
+            self.state = "waiting_for_zero" if not session.zero_seen else "waiting_for_weight"
             self.last_error = None
         await self._async_maybe_complete()
         self._notify()
@@ -610,15 +624,19 @@ class FoodDiaryCoordinator:
 
     async def async_catalog_changed(self, barcode: str | None = None) -> None:
         """Resolve an unknown pending product after manual/catalog insertion."""
-        if self._session is None or (barcode and barcode != self._session.barcode):
+        session = self._session
+        session_id = self._session_id
+        if session is None or (barcode and barcode != session.barcode):
             return
         food = await self.hass.async_add_executor_job(
-            self.store.find_food_by_barcode, self._session.barcode
+            self.store.find_food_by_barcode, session.barcode
         )
-        if food is not None and self._session is not None:
-            self._session.food = food
-            self._session.status = "waiting_for_weight"
-            self.state = "waiting_for_zero" if not self._session.zero_seen else "waiting_for_weight"
+        # The DB lookup yields control; do not apply its result to a replacement
+        # session, even if the replacement happens to use the same barcode.
+        if food is not None and self._session is session and self._session_id == session_id:
+            session.food = food
+            session.status = "waiting_for_weight"
+            self.state = "waiting_for_zero" if not session.zero_seen else "waiting_for_weight"
             await self._async_maybe_complete()
             self._notify()
 
@@ -632,6 +650,31 @@ class FoodDiaryCoordinator:
         async with self._save_lock:
             session = self._session
             if session is None or not session.can_save or self._saving:
+                return None
+            # A callback may be delayed while another operation owns the lock.
+            # Enforce retention here too, so a save cannot win after 24 hours.
+            if (
+                self._session_expires_at is not None
+                and self._session_expires_at <= datetime.now(timezone.utc)
+            ):
+                session_id = self._session_id
+                try:
+                    if session_id:
+                        await self.hass.async_add_executor_job(
+                            self.store.delete_pending_session, session_id
+                        )
+                except Exception:
+                    _LOGGER.exception("Unable to expire pending scan before save")
+                    self.last_error = "pending_session_expiry_failed"
+                    self.state = "storage_error"
+                    self._notify()
+                    return None
+                self._session = None
+                self._clear_session_metadata()
+                self._cancel_timeout()
+                self.last_error = "scan_session_retention_expired"
+                self.state = "expired"
+                self._notify()
                 return None
             self._saving = True
             self._cancel_timeout()
@@ -668,13 +711,22 @@ class FoodDiaryCoordinator:
             if self._session is None:
                 return
             session_id = self._session_id
+            try:
+                if session_id:
+                    await self.hass.async_add_executor_job(
+                        self.store.delete_pending_session, session_id
+                    )
+            except Exception:
+                # Keep the in-memory session if SQLite is unavailable. The
+                # durable row is still needed for retry/recovery after reload.
+                _LOGGER.exception("Unable to discard pending Food Diary scan")
+                self.last_error = "pending_session_discard_failed"
+                self.state = "storage_error"
+                self._notify()
+                raise
             self._session = None
             self._clear_session_metadata()
             self._cancel_timeout()
-            if session_id:
-                await self.hass.async_add_executor_job(
-                    self.store.delete_pending_session, session_id
-                )
             self.state = "discarded"
             self.last_error = None
             self._notify()
