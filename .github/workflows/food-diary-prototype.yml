@@ -36,6 +36,10 @@ jobs:
             homeassistant/prototypes/food_diary_integration/custom_components/food_diary \
             homeassistant/prototypes/food_diary_sqlite
 
+      - name: Check Aurora Lovelace card JavaScript
+        run: |
+          node --check homeassistant/prototypes/food_diary_integration/custom_components/food_diary/www/food-diary-card.js
+
       - name: Validate integration JSON
         run: |
           python -m json.tool homeassistant/prototypes/food_diary_integration/custom_components/food_diary/manifest.json > /dev/null
