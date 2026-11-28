@@ -192,13 +192,14 @@ class FoodDiaryStore:
     def search_foods(self, query: str = "", *, limit: int = 100) -> list[dict[str, Any]]:
         if not 1 <= int(limit) <= 500:
             raise ValueError("limit must be between 1 and 500")
+        escaped_query = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        pattern = f"%{escaped_query}%"
         with self._connect() as db:
             rows = db.execute(
                 """SELECT * FROM foods
                 WHERE name LIKE ? ESCAPE '\\' OR COALESCE(brand,'') LIKE ? ESCAPE '\\'
                 ORDER BY name COLLATE NOCASE, brand COLLATE NOCASE LIMIT ?""",
-                (f"%{query.replace('%', '\\%').replace('_', '\\_')}%",
-                 f"%{query.replace('%', '\\%').replace('_', '\\_')}%", int(limit)),
+                (pattern, pattern, int(limit)),
             ).fetchall()
             return [dict(row) for row in rows]
 
