@@ -143,3 +143,17 @@ Ambiente di riferimento confermato: HA OS 18.4, Core 2026.11.3, Supervisor 2026.
 - [ ] Testare più versioni Core 2026, hassfest, test integrazione e installazione/upgrade HACS.
 
 Specifica: [HACS_ARCHITECTURE.md](../prototypes/food_diary_integration/HACS_ARCHITECTURE.md).
+
+
+### Config flow e selezione dispositivi — primo prototipo
+
+- [x] Config flow con selettore del sensore peso ESPHome.
+- [x] Config flow con selettore del device scanner ESPHome.
+- [x] Options flow per cambiare dispositivi e impostazioni operative.
+- [x] Traduzioni iniziali italiano/inglese.
+- [x] Registrazione/rimozione delle azioni nel ciclo di vita del config entry.
+- [ ] Testare config flow e options flow su Core 2026.11.3.
+- [ ] Verificare che il device selezionato corrisponda al nodo mittente dell'evento.
+- [ ] Aggiungere scanner identifier al payload evento ESPHome in una copia di sviluppo isolata.
+- [ ] Implementare correlazione barcode/peso e gestione timeout.
+- [ ] Eseguire hassfest e test integrazione prima della promozione HACS.
