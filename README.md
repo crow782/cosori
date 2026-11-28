@@ -7,10 +7,19 @@ Independent investigation of the Cosori Nutrition Scale CNS-R101S for local BLE 
 ## Firmware files
 
 - [esphome/cosori-discovery.yaml](esphome/cosori-discovery.yaml): scans for a Cosori scale and logs its BLE address and advertised service UUIDs. Use this for a new physical scale.
+- [esphome/test-ble-direct-cosori.yaml](esphome/test-ble-direct-cosori.yaml): passive advertising test filtered to the known test-unit MAC; logs manufacturer and service data without connecting to the scale.
 - [esphome/cosori-cns-r101s.yaml](esphome/cosori-cns-r101s.yaml): main CNS-R101S integration; connects to the configured MAC, decodes weight notifications, and exposes raw and stable weight sensors.
 - [esphome/cosori-diagnostic.yaml](esphome/cosori-diagnostic.yaml): earlier connection/GATT diagnostic configuration.
 
 All configurations require wifi_ssid, wifi_password and fallback_ap_password in ESPHome secrets.yaml. The barcode scanner also requires api_encryption_key (generate it with openssl rand -base64 32). Never commit credentials or API keys.
+
+## Passive advertising test
+
+Flash test-ble-direct-cosori.yaml to a classic ESP32 DevKit (30-pin; ESPHome board esp32dev). It listens without a BLE client connection and filters reports to the known test-unit MAC C0:60:40:03:9F:6D.
+
+Open ESPHome logs and capture reports with the scale empty, then with approximately 100 g, 500 g and 1000 g. Compare SERVICE_DATA and MANUFACTURER payloads. If a field changes consistently with the load, it may expose the weight through advertising and could allow a passive Home Assistant integration.
+
+This test logs parsed advertising structures (service UUIDs, manufacturer data, service data and TX power). It does not capture GATT notifications. ESPHome may combine advertising and active scan-response information in the device report. A lack of changing advertising data does not by itself prove that the scale never broadcasts weight, but it would mean no weight field has been identified in the captured advertising data.
 
 ## Finding another scale
 
