@@ -68,7 +68,7 @@ Il firmware combinato continua anche a emettere `esphome.barcode_scanned`, ma il
 - `state_changed`: stato o attributi modificati;
 - `state_reported`: l'entità riporta lo stesso stato senza variazioni.
 
-Il coordinator dovrà ascoltare l'entità selezionata e valutare entrambi gli eventi. Va verificato se il text sensor ESPHome pubblica nuovamente il valore a ogni lettura identica. Se non lo fa, servirà un evento dedicato o un contatore/attributo di scansione nel firmware di sviluppo. Non basarsi su `last_changed` come identificatore di ogni scansione.
+Il coordinator dovrà ascoltare l'entità selezionata su state_changed e valutare anche state_reported tramite listener con event_filter limitato all'entity_id selezionato (l'evento può essere frequente). Va verificato se il text sensor ESPHome pubblica nuovamente il valore a ogni lettura identica. Se non lo fa, servirà un evento dedicato o un contatore/attributo di scansione nel firmware di sviluppo. Non basarsi su `last_changed` come identificatore di ogni scansione.
 
 Riferimenti ufficiali:
 - https://www.home-assistant.io/docs/configuration/events/
