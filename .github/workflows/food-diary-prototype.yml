@@ -49,6 +49,8 @@ jobs:
             homeassistant/prototypes/food_diary_integration/custom_components/food_diary/storage.py
 
       - name: Run SQLite unit tests
+        env:
+          PYTHONPATH: homeassistant/prototypes/food_diary_sqlite
         run: |
           python -m unittest discover \
             -s homeassistant/prototypes/food_diary_sqlite/tests \
