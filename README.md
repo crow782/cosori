@@ -10,6 +10,7 @@ Independent investigation of the Cosori Nutrition Scale CNS-R101S for local BLE 
 
 ## Firmware files
 
+- [esphome/cosori-barcode-integrated.yaml](esphome/cosori-barcode-integrated.yaml): **recommended combined firmware** for one ESP32; Cosori BLE GATT scale + GM67 UART scanner + OLED + Home Assistant nutritional feedback, without Bluetooth proxy.
 - [esphome/cosori-discovery.yaml](esphome/cosori-discovery.yaml): scans for a Cosori scale and logs its BLE address and advertised service UUIDs. Use this for a new physical scale.
 - [esphome/cosori-cns-r101s.yaml](esphome/cosori-cns-r101s.yaml): main CNS-R101S integration; connects to the configured MAC, decodes weight notifications, and exposes raw and stable weight sensors.
 - [esphome/cosori-diagnostic.yaml](esphome/cosori-diagnostic.yaml): earlier connection/GATT diagnostic configuration.
@@ -107,8 +108,8 @@ The firmware validates the observed packet header and minimum length before deco
 
 ## Barcode scanner and food diary
 
-The optional GM67 barcode scanner firmware is in [barcode scanner.yaml](barcode%20scanner.yaml). The scanner emits `esphome.barcode_scanned` immediately through the ESPHome API; it no longer performs HTTP requests or JSON parsing. Home Assistant handles Open Food Facts and calls the scanner's `show_food_result` API action to display product, weight, portion kcal and cumulative kcal. The Cosori firmware keeps the direct BLE GATT client and does not enable Bluetooth proxy.
+The recommended one-board firmware is [esphome/cosori-barcode-integrated.yaml](esphome/cosori-barcode-integrated.yaml). The original [barcode scanner.yaml](barcode%20scanner.yaml) and [esphome/cosori-cns-r101s.yaml](esphome/cosori-cns-r101s.yaml) remain available as separate reference configurations. The integrated scanner emits `esphome.barcode_scanned` immediately through the ESPHome API; it performs no HTTP requests or JSON parsing. Home Assistant handles Open Food Facts and calls `show_food_result` to display product, weight, portion kcal and cumulative kcal. Bluetooth proxy is not configured.
 
 The first Home Assistant bridge is in [homeassistant/README.md](homeassistant/README.md), with the package at [homeassistant/packages/food_diary.yaml](homeassistant/packages/food_diary.yaml). The intended workflow is: tare the empty plate, scan the product, add the food, then pair the barcode with the next positive stable scale reading.
 
-The Home Assistant package now performs Open Food Facts v3 lookup and calculates nutrient amounts for the latest weighed portion. Manual product entry, persistent multi-entry diary storage and meal/day totals are still planned.
+The Home Assistant package performs Open Food Facts v3 lookup, calculates nutrient amounts for the latest weighed portion and maintains a cumulative kcal counter that can be reset manually. Manual product entry, persistent multi-entry diary storage and meal/day grouping are still planned.
