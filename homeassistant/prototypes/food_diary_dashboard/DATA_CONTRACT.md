@@ -123,7 +123,7 @@ La configurazione finale sarà tramite config flow e options flow:
 - nessun MAC BLE o UUID GATT da inserire manualmente;
 - opzioni per pasto predefinito, salvataggio automatico, timeout, soglia zero e lookup Open Food Facts.
 
-Il firmware ESPHome attuale espone anche un'entità `text_sensor`/`sensor` che contiene l'ultimo barcode, ad esempio `sensor.barcode_scanner_last_barcode`. Il config flow prototipo seleziona direttamente questa entità: non è necessario identificare il device ESPHome né aggiungere un ID al payload. Il firmware continua inoltre a emettere `esphome.barcode_scanned`, ma il flusso definitivo previsto è entity-based.
+Il firmware ESPHome attuale espone anche un'entità `text_sensor`/`sensor` che contiene l'ultimo barcode, ad esempio `sensor.barcode_scanner_last_barcode`. Il config flow prototipo seleziona direttamente questa entità: non è necessario identificare il device ESPHome né aggiungere un ID al payload. Il firmware continua inoltre a emettere `esphome.barcode_scanned`: il coordinator lo usa come conferma solo se esiste un unico incremento pendente e il barcode coincide con il sensore selezionato. Il contatore resta il trigger e l'entità barcode il fallback per scanner generici.
 
 L'utente ha verificato che `sensor.barcode_scanner_scan_count` incrementa a ogni scansione, anche quando `sensor.barcode_scanner_last_barcode` mantiene lo stesso valore. Il runtime ascolta quindi `state_changed` sul contatore selezionato e legge il barcode dall'entità selezionata. Il coordinator deve verificare l'ordine di pubblicazione dei due sensori per evitare di associare il nuovo conteggio al barcode precedente. Non basarsi su `last_changed` del barcode e non richiedere modifiche al firmware attivo.
 
