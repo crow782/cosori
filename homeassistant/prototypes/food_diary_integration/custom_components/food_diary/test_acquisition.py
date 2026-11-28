@@ -19,6 +19,7 @@ ScanSession = _MODULE.ScanSession
 normalize_barcode = _MODULE.normalize_barcode
 parse_openfoodfacts_product = _MODULE.parse_openfoodfacts_product
 parse_weight_grams = _MODULE.parse_weight_grams
+classify_counter_change = _MODULE.classify_counter_change
 
 
 class BarcodeNormalizationTests(unittest.TestCase):
@@ -129,6 +130,23 @@ class OpenFoodFactsParserTests(unittest.TestCase):
     def test_rejects_not_found_or_missing_product_name(self):
         self.assertIsNone(parse_openfoodfacts_product({"status": 0}, "8017596008299"))
         self.assertIsNone(parse_openfoodfacts_product({"status": 1, "product": {}}, "8017596008299"))
+
+
+class CounterChangeTests(unittest.TestCase):
+    def test_initial_value_is_baseline_not_a_scan(self):
+        self.assertEqual(classify_counter_change(None, 7), ("baseline", 0))
+
+    def test_single_increment(self):
+        self.assertEqual(classify_counter_change(7, 8), ("increment", 1))
+
+    def test_multiple_increment_is_reported_as_burst(self):
+        self.assertEqual(classify_counter_change(7, 9), ("increment", 2))
+
+    def test_reset_is_not_a_scan(self):
+        self.assertEqual(classify_counter_change(7, 0), ("reset", 0))
+
+    def test_invalid_counter_is_rejected(self):
+        self.assertEqual(classify_counter_change(7, None), ("invalid", 0))
 
 
 class ScanSessionTests(unittest.TestCase):
