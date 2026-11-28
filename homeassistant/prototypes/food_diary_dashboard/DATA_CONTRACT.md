@@ -70,16 +70,16 @@ Regole confermate:
 3. La media giornaliera esclude le giornate senza registrazioni.
 4. Un nutriente sconosciuto resta null; non deve essere trasformato in zero.
 
-**Gap tecnico da completare:** la risposta attuale non espone ancora la media giornaliera e non descrive la copertura dei nutrienti. Prima di mostrare medie kcal bisogna aggiungere un indicatore per distinguere giornate con kcal note da giornate con valori mancanti, e riportare il numero di giorni effettivamente usati nel denominatore. Non presentare una media come completa quando una o più porzioni hanno kcal sconosciute.
-
-Proposta per la prossima versione della risposta:
+**Estensione appena implementata nel prototipo SQLite:** la risposta ora include:
 - `days_with_entries`: giorni con almeno una registrazione;
 - `days_with_energy_data`: giorni con almeno un valore kcal noto;
 - `average_daily_energy_kcal`: media sulle giornate con kcal note;
-- `average_days_count`: numero di giorni usati nel denominatore;
-- `nutrient_coverage`: per nutriente, numero di voci note e mancanti, così da segnalare somme parziali.
+- `average_days_count`: numero di giorni effettivamente usati nel denominatore;
+- `nutrient_coverage`: per nutriente, numero di voci note, mancanti e flag di completezza, sia per il periodo sia per ogni giorno.
 
-La UI dovrà mostrare il denominatore (es. "media su 5 giorni con kcal disponibili") e un avviso se il totale del periodo è parziale. Nessuna giornata senza registrazioni entra nel denominatore.
+La media esclude i giorni senza registrazioni e anche i giorni per cui tutte le kcal sono sconosciute. Se una giornata contiene sia voci con kcal note sia voci senza kcal, la somma nota viene mantenuta ma la copertura segnala che è parziale: la UI deve mostrarlo chiaramente e non presentare il valore come completo. Nessun `null` viene convertito in zero.
+
+**Verifica ancora necessaria:** il codice e i test sono stati aggiornati, ma i test devono passare nella CI prima di considerare validata questa estensione.
 
 ## 5. Flusso di acquisizione barcode + bilancia
 
