@@ -182,6 +182,46 @@ class ScanSessionTests(unittest.TestCase):
         session.food = {"id": "food-1"}
         self.assertTrue(session.can_save)
 
+    def test_unavailable_reading_invalidates_previously_accepted_weight(self):
+        session = ScanSession("8017596008299", zero_seen=True)
+        session.food = {"id": "food-1"}
+        session.observe_weight(125, 2)
+        self.assertTrue(session.can_save)
+
+        session.observe_weight(None, 2)
+
+        self.assertFalse(session.can_save)
+        self.assertIsNone(session.weight_g)
+        self.assertTrue(session.zero_seen)
+        self.assertEqual(session.status, "waiting_for_weight")
+
+    def test_negative_reading_does_not_count_as_zero_or_valid_weight(self):
+        session = ScanSession("8017596008299", zero_seen=False)
+        session.food = {"id": "food-1"}
+
+        session.observe_weight(-0.5, 2)
+
+        self.assertFalse(session.zero_seen)
+        self.assertFalse(session.can_save)
+        self.assertIsNone(session.weight_g)
+        self.assertEqual(session.status, "waiting_for_zero")
+
+    def test_negative_reading_invalidates_an_accepted_weight(self):
+        session = ScanSession("8017596008299", zero_seen=True)
+        session.food = {"id": "food-1"}
+        session.observe_weight(80, 2)
+
+        session.observe_weight(-1, 2)
+
+        self.assertFalse(session.can_save)
+        self.assertIsNone(session.weight_g)
+
+    def test_exact_zero_threshold_counts_as_zero(self):
+        session = ScanSession("8017596008299", zero_seen=False)
+        session.observe_weight(2, 2)
+        self.assertTrue(session.zero_seen)
+        self.assertIsNone(session.weight_g)
+
 
 if __name__ == "__main__":
     unittest.main()
