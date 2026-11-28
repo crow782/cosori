@@ -118,7 +118,7 @@ Runtime presente come prototipo, da validare:
 - sessione prodotto sconosciuto risolvibile aggiungendo alimento con lo stesso barcode;
 - azioni `save_pending`, `discard_pending`, `get_status`, `search_openfoodfacts`;
 - sensori diagnostici per stato, ultimo barcode, ultimo peso stabile e scan count;
-- test unitari puri per parsing barcode/peso, soglia zero e parsing nutrienti.
+- test unitari puri per parsing barcode/peso, baseline e burst del contatore, soglia zero e parsing nutrienti OFF v1/v3.
 
 Non ancora presenti:
 - pannello Aurora connesso al backend;
@@ -243,3 +243,6 @@ Riferimenti API ufficiali Open Food Facts consultati:
 - Product lookup v3: https://openfoodfacts.github.io/documentation/docs/Product-Opener/v3/products/get-api-v3-product-code/
 - Search full-text legacy: https://openfoodfacts.github.io/documentation/docs/Product-Opener/v2/search/get-search/
 - Panoramica versioni API e stato v2/v3: https://openfoodfacts.github.io/openfoodfacts-server/api/
+
+
+Ultimo aggiornamento tecnico: il parser del contatore è stato estratto in una funzione pura e i test coprono baseline iniziale, incremento singolo, burst, reset e valore non valido. Il setup dell'integrazione ora pulisce listener, servizi e riferimenti se il setup del coordinator o della piattaforma sensori fallisce.
