@@ -3,7 +3,12 @@ from __future__ import annotations
 
 import unittest
 
-from food_diary.acquisition import (\n    ScanSession, normalize_barcode, parse_openfoodfacts_product, parse_weight_grams\n)
+from food_diary.acquisition import (
+    ScanSession,
+    normalize_barcode,
+    parse_openfoodfacts_product,
+    parse_weight_grams,
+)
 
 
 class BarcodeNormalizationTests(unittest.TestCase):
