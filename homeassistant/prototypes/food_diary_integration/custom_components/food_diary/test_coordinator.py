@@ -5,6 +5,7 @@ import asyncio
 import importlib
 import inspect
 import sys
+import sqlite3
 import types
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -130,6 +131,32 @@ class CoordinatorConcurrencyTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(coordinator._session.zero_seen)
         self.assertIsNone(coordinator._session.weight_g)
         self.assertEqual(coordinator.state, "restored_waiting_for_zero")
+
+    async def test_sqlite_read_error_during_restore_keeps_integration_recoverable(self):
+        coordinator, store = make()
+
+        def fail_read():
+            raise sqlite3.OperationalError("database is locked")
+
+        store.get_pending_session = fail_read
+        await coordinator._async_restore_pending_session()
+        self.assertEqual(coordinator.state, "storage_error")
+        self.assertEqual(coordinator.last_error, "pending_session_restore_failed")
+        self.assertIsNone(coordinator._session)
+
+    async def test_sqlite_catalogue_error_keeps_pending_barcode(self):
+        coordinator, store = make()
+        session = ScanSession("8017596008299", zero_seen=False)
+        coordinator._session = session
+
+        def fail_lookup(barcode):
+            raise sqlite3.OperationalError("disk I/O error")
+
+        store.find_food_by_barcode = fail_lookup
+        await coordinator._async_lookup_product(session.barcode)
+        self.assertIs(coordinator._session, session)
+        self.assertEqual(coordinator.state, "storage_error")
+        self.assertEqual(coordinator.last_error, "catalog_lookup_failed")
 
     async def test_unload_and_restart_restore_persisted_barcode(self):
         coordinator, store = make()
