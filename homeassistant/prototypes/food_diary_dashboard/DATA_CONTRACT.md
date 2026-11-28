@@ -118,13 +118,13 @@ Versione di riferimento comunicata dall'utente: Home Assistant Core 2026.11.3, S
 
 La configurazione finale sarà tramite config flow e options flow:
 - selezione del sensore peso stabile con entity selector (dominio sensor, device class weight, integrazione ESPHome);
-- selezione diretta dell'entità scanner tramite entity selector generico sul dominio `sensor`, ad esempio `sensor.barcode_scanner_last_barcode`;
+- selezione diretta dell'entità barcode tramite entity selector generico sul dominio `sensor`, ad esempio `sensor.barcode_scanner_last_barcode`;\n- selezione diretta del contatore scansioni tramite entity selector generico sul dominio `sensor`, ad esempio `sensor.barcode_scanner_scan_count`;
 - nessun MAC BLE o UUID GATT da inserire manualmente;
 - opzioni per pasto predefinito, salvataggio automatico, timeout, soglia zero e lookup Open Food Facts.
 
 Il firmware ESPHome attuale espone anche un'entità `text_sensor`/`sensor` che contiene l'ultimo barcode, ad esempio `sensor.barcode_scanner_last_barcode`. Il config flow prototipo seleziona direttamente questa entità: non è necessario identificare il device ESPHome né aggiungere un ID al payload. Il firmware continua inoltre a emettere `esphome.barcode_scanned`, ma il flusso definitivo previsto è entity-based.
 
-Il runtime dovrà ascoltare gli aggiornamenti dell'entità selezionata. Per coprire letture ripetute con lo stesso valore, valutare sia `state_changed` sia `state_reported`: Home Assistant documenta `state_reported` quando un'entità riporta lo stesso stato senza variazioni. Resta da verificare che la piattaforma ESPHome aggiorni effettivamente l'entità a ogni scansione identica; se non lo fa, servirà un trigger firmware/evento supplementare. Non basarsi su `last_changed` per distinguere ogni scansione.
+L'utente ha verificato che `sensor.barcode_scanner_scan_count` incrementa a ogni scansione, anche quando `sensor.barcode_scanner_last_barcode` mantiene lo stesso valore. Il runtime ascolta quindi `state_changed` sul contatore selezionato e legge il barcode dall'entità selezionata. Il coordinator deve verificare l'ordine di pubblicazione dei due sensori per evitare di associare il nuovo conteggio al barcode precedente. Non basarsi su `last_changed` del barcode e non richiedere modifiche al firmware attivo.
 
 Per mantenere un'unica installazione HACS, la direzione scelta è un pannello Aurora incluso nella cartella dell'integrazione, servito localmente e registrato tramite API pubbliche di Home Assistant. Il frontend non avrà dipendenze CDN o framework di nicchia. Se il pannello non supera i test sulle release target, fallback a dashboard Lovelace con card native.
 
