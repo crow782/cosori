@@ -364,3 +364,15 @@ Nota CI successiva (Run #4, 2026-11-28):
 - compileall, Node syntax, JSON, copie SQLite: tutti OK;
 - 22 test SQLite e 26 test acquisizione superati.
 - Dopo aver letto i log, ho aggiunto un ulteriore test esplicito: una lettura positiva successiva a `unavailable` non deve essere salvabile finché non viene osservata una nuova tara. Questo test è successivo al Run #4 e richiede una nuova esecuzione CI.
+
+## Concorrenza scadenza sessione — 2026-11-28
+
+Revisione del coordinatore dopo CI Run #5:
+- individuata una race tra callback di scadenza retention 24h e operazioni save/discard;
+- `_async_expire_persisted_session` ora acquisisce lo stesso `_save_lock` usato da save/discard/creazione;
+- la riga SQLite viene eliminata prima di cancellare lo stato in memoria;
+- se la cancellazione SQLite fallisce, la sessione resta disponibile e il coordinatore passa a `storage_error`, senza perdere il barcode pendente.
+
+Commit: `33d282729079299c8ae706047384a309a65fbb8c`.
+
+La modifica è pubblicata ma non ancora verificata dalla CI. I test attuali non esercitano il coordinatore HA né questa concorrenza; prossimo lavoro: introdurre un test harness per coordinator con fake Home Assistant o ambiente pytest-homeassistant-custom-component, poi estendere la CI. Non dichiarare questo caso testato fino a quando il test non viene eseguito.
