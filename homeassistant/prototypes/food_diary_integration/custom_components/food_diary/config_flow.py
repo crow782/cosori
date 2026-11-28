@@ -57,7 +57,9 @@ def _options_schema() -> vol.Schema:
     return vol.Schema(schema)
 
 
-async def _validate_entity_selection(\n    hass, weight_entity: str, barcode_entity: str, scan_count_entity: str\n) -> str | None:
+async def _validate_entity_selection(
+    hass, weight_entity: str, barcode_entity: str, scan_count_entity: str
+) -> str | None:
     """Validate selected entities against the entity registry."""
     entity_registry = er.async_get(hass)
     weight = entity_registry.async_get(weight_entity)
