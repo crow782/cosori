@@ -176,7 +176,7 @@ When automatic save is disabled, or manual review is wanted, use food_diary.save
 
 Generic scanner fallback: if no ESPHome event arrives, one pending counter increment is resolved from the selected barcode entity after 800 ms. Multiple unmatched increments are marked ambiguous and are never auto-saved.
 
-The current pending session is held in memory; a Home Assistant restart during an incomplete/unknown-product session loses that pending session. The actual catalogue and diary remain in SQLite.
+The pending scan session is persisted in SQLite for up to 24 hours. A Home Assistant restart or config-entry reload restores the barcode, but never trusts a pre-restart weight or zero baseline; a fresh zero/tare and a new stable positive weight are required. The catalogue and diary remain in the same SQLite database.
 
 Runtime code is still experimental and has not been loaded in Home Assistant or tested with the physical devices.
 
@@ -196,9 +196,12 @@ The integration stores one active scanner session in the same SQLite database as
 
 After a Home Assistant restart or config-entry reload, an unexpired session is restored with the product resolved from the local catalogue when available. The user must tare the scale again and obtain a new stable positive weight before the portion can be saved. If the product is unknown, the barcode remains available for manual entry or Open Food Facts search. Sessions expire after 24 hours; the ordinary weight-wait timeout remains separately configurable.
 
-Saving a scanned portion and deleting its pending session happen in the same SQLite transaction. This prevents a restart between those operations from leaving a completed portion queued for a second save. Discarding and timeout also remove the persisted session. Existing database schema version 2 is migrated to version 3 automatically without deleting foods or diary entries.
+Saving a scanned portion and deleting its pending session happen in the same SQLite transaction. This prevents a restart between those operations from leaving a completed portion queued for a second save. Discarding and the hard 24-hour expiry remove the persisted session; the shorter weight-acquisition timeout does not, so the barcode remains recoverable. Existing database schema version 2 is migrated to version 3 automatically without deleting foods or diary entries.
 
 
 ### Persistenza delle sessioni pendenti
 
 Le sessioni barcode sono conservate in SQLite con retention massima di 24 ore. Un riavvio o reload non ripristina mai il peso: richiede un nuovo zero e una nuova pesata stabile. Il timeout breve di acquisizione imposta lo stato `weight_timeout` ma non elimina il barcode pendente; la sessione resta recuperabile fino a scadenza o annullamento. Questa logica è implementata nel prototipo e non è ancora validata su Home Assistant.
+
+
+Coordinator concurrency safeguards: asynchronous product/catalogue lookups are bound to the exact scan-session object and cannot modify a later session, even when the barcode is identical. Save, discard and 24-hour expiry are serialized; a save rechecks expiry while holding the lock. SQLite deletion is completed before in-memory discard/expiry, and a database error preserves the pending session for retry/recovery. The fake-HA coordinator tests are present but still require a fresh CI run and later validation against a real Home Assistant Core instance.
