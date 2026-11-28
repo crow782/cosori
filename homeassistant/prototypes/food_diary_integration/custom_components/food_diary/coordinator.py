@@ -386,18 +386,27 @@ class FoodDiaryCoordinator:
         self.hass.async_create_task(self._async_expire_persisted_session())
 
     async def _async_expire_persisted_session(self) -> None:
-        """Expire the pending session after its durable 24-hour retention window."""
-        session_id = self._session_id
-        self._session = None
-        self._clear_session_metadata()
-        if session_id:
-            await self.hass.async_add_executor_job(
-                self.store.delete_pending_session, session_id
-            )
-        self._cancel_timeout()
-        self.last_error = "scan_session_retention_expired"
-        self.state = "expired"
-        self._notify()
+        """Expire the pending session atomically with save and discard."""
+        async with self._save_lock:
+            session_id = self._session_id
+            if self._session is None or session_id is None:
+                return
+            try:
+                await self.hass.async_add_executor_job(
+                    self.store.delete_pending_session, session_id
+                )
+            except Exception:
+                _LOGGER.exception("Unable to expire pending Food Diary scan")
+                self.last_error = "pending_session_expiry_failed"
+                self.state = "storage_error"
+                self._notify()
+                return
+            self._session = None
+            self._clear_session_metadata()
+            self._cancel_timeout()
+            self.last_error = "scan_session_retention_expired"
+            self.state = "expired"
+            self._notify()
 
     async def _async_begin_scan(self, barcode: str) -> None:
         # Serialize creation/persistence with save and discard so a fast UI
