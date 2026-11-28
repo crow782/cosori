@@ -173,3 +173,6 @@ Aggiunta l'azione search_openfoodfacts per ricerca testuale di prodotti alternat
 ## Fase 13 — Migrazione Open Food Facts API corrente (2026-11-28)
 
 Il lookup per barcode è stato spostato dall'API v2 deprecata alla API v3 corrente. Il parser ora supporta la struttura nutrition.aggregated_set.nutrients, usa i valori computati quando disponibili e accetta i nutrienti solo se il set è per 100 g; valori per 100 ml non vengono reinterpretati come per 100 g. La ricerca testuale alternativa resta sull'endpoint legacy full-text perché la documentazione ufficiale indica che la ricerca testuale completa non è disponibile nelle API v2/v3. È stato aggiunto un User-Agent identificativo per le richieste.
+
+
+Correzione importante della correlazione eventi: l'evento ESPHome legge Last Barcode al momento dell'invio dopo 300 ms, quindi non è uno snapshot immutabile del barcode originario. Il coordinator è stato reso fail-safe: accetta soltanto un incremento contatore pendente alla volta e solo se il payload coincide con l'entità barcode selezionata; se più incrementi si sovrappongono, li marca ambigui e non salva.
