@@ -125,6 +125,55 @@ class FoodDiaryStoreTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.store.period_summary("day", "2026-11-28", "Not/A_Real_Zone")
 
+
+    def test_timestamps_preserve_microseconds_and_normalize_to_utc(self):
+        food = self.store.add_food("Acqua")
+        entry = self.store.add_entry(
+            food["id"], 250, "snack",
+            consumed_at="2026-11-28T13:15:16.123456+01:00",
+        )
+        self.assertEqual(
+            entry["consumed_at"], "2026-11-28T12:15:16.123456+00:00"
+        )
+
+    def test_empty_summary_and_year_boundary(self):
+        empty = self.store.period_summary("day", "2026-02-28", "Europe/Rome")
+        self.assertEqual(empty["entry_count"], 0)
+        self.assertEqual(empty["days_with_entries"], 0)
+        self.assertIsNone(empty["totals"]["energy_kcal"])
+        food = self.store.add_food(
+            "Mandorle", nutrients_per_100g={"energy_kcal": 600}
+        )
+        self.store.add_entry(
+            food["id"], 10, "dinner",
+            consumed_at="2026-12-31T23:30:00+01:00",
+        )
+        self.store.add_entry(
+            food["id"], 10, "breakfast",
+            consumed_at="2027-01-01T00:30:00+01:00",
+        )
+        december = self.store.period_summary("month", "2026-12-31", "Europe/Rome")
+        january = self.store.period_summary("month", "2027-01-01", "Europe/Rome")
+        self.assertEqual(december["entry_count"], 1)
+        self.assertEqual(january["entry_count"], 1)
+        self.assertEqual(december["end_date_exclusive"], "2027-01-01")
+
+    def test_leap_february_month_range(self):
+        february = self.store.period_summary("month", "2028-02-29", "Europe/Rome")
+        self.assertEqual(february["start_date"], "2028-02-01")
+        self.assertEqual(february["end_date_exclusive"], "2028-03-01")
+
+    def test_database_schema_version_is_initialized(self):
+        import sqlite3
+        with sqlite3.connect(self.db_path) as db:
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 1)
+
+    def test_anchor_date_rejects_datetime(self):
+        with self.assertRaises(ValueError):
+            self.store.period_summary(
+                "day", datetime(2026, 11, 28), "Europe/Rome"
+            )
+
     def test_integrity(self):
         self.assertEqual(self.store.integrity_check(), "ok")
 
