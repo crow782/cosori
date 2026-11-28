@@ -365,6 +365,48 @@ class FoodDiaryCoordinator:
                 self.store.find_food_by_barcode, barcode
             )
 
+    async def async_search_openfoodfacts(
+        self, query: str, limit: int = 20
+    ) -> list[dict[str, Any]]:
+        """Search OFF's legacy full-text endpoint for manual alternatives."""
+        query = str(query).strip()
+        if len(query) < 2:
+            raise ValueError("query must contain at least two characters")
+        if len(query) > 100:
+            raise ValueError("query must not exceed 100 characters")
+        limit = max(1, min(int(limit), 50))
+        if not self.config.get(CONF_OFF_ENABLED, True):
+            raise ValueError("Open Food Facts lookup is disabled in integration options")
+        url = "https://world.openfoodfacts.org/cgi/search.pl"
+        session = async_get_clientsession(self.hass)
+        timeout = aiohttp.ClientTimeout(total=12)
+        async with session.get(
+            url,
+            params={
+                "search_terms": query,
+                "search_simple": 1,
+                "action": "process",
+                "json": 1,
+                "page_size": limit,
+                "fields": OFF_FIELDS,
+                "cc": str(self.config.get(CONF_OFF_COUNTRY, "it")).lower(),
+                "lc": str(self.config.get(CONF_OFF_LANGUAGE, "it")).lower(),
+            },
+            timeout=timeout,
+        ) as response:
+            response.raise_for_status()
+            payload = await response.json(content_type=None)
+        products: list[dict[str, Any]] = []
+        for raw_product in payload.get("products", []):
+            barcode = str(raw_product.get("code") or "").strip()
+            parsed = parse_openfoodfacts_product(
+                {"status": 1, "product": raw_product}, barcode
+            )
+            if parsed is None or not barcode:
+                continue
+            products.append(parsed)
+        return products
+
     async def _async_observe_weight(self, weight_g: float | None) -> None:
         if self._stopped or self._session is None:
             self._notify()
