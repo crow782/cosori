@@ -108,3 +108,17 @@ Non è ancora un diario storico: non registra una serie di pasti, non assegna gl
 5. Testare barcode, OFF, inserimento manuale, riavvio, periodi e fuso orario.
 
 **Regola di lavoro:** tutti i prototipi restano isolati in `homeassistant/prototypes/`; non modificare package, firmware o dashboard attive prima della validazione.
+
+
+## Contratto dati e collegamento dashboard
+- [x] Creato `homeassistant/prototypes/food_diary_dashboard/DATA_CONTRACT.md` con modello dati, azioni HA presenti, flusso barcode/bilancia e responsabilità frontend.
+- [x] Verificata la lista delle azioni realmente registrate nell'integrazione sperimentale.
+- [x] Evidenziato il gap: `period_summary` non espone ancora media giornaliera né copertura dei nutrienti.
+- [x] Aggiornato il mockup storico per mostrare un giorno senza registrazioni come N/D.
+- [ ] Estendere riepiloghi SQLite con copertura nutrienti e denominatore esplicito della media.
+- [ ] Aggiungere ed eseguire test per giornate senza dati, nutrienti kcal mancanti e medie.
+- [ ] Verificare versione Home Assistant Core e supporto frontend per risposte delle azioni.
+- [ ] Scegliere card native con helper/script oppure custom Lovelace card.
+- [ ] Collegare dashboard solo dopo test backend su istanza HA separata.
+
+Contratto: [DATA_CONTRACT.md](../prototypes/food_diary_dashboard/DATA_CONTRACT.md).
