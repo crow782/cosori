@@ -186,4 +186,14 @@ Cartella: `homeassistant/prototypes/food_diary_sqlite/`
 - [x] Aggiungere workflow GitHub Actions con matrice Python 3.10–3.13; [ ] verificare la prima esecuzione CI.
 - [ ] Solo dopo i test, realizzare l'integrazione Home Assistant vera e propria.
 
+**Prototipo integrazione Home Assistant separato:** `homeassistant/prototypes/food_diary_integration/`
+
+- [x] Creato scheletro custom integration con config flow e manifest.
+- [x] Aggiunte azioni per catalogo, barcode, registrazioni e riepiloghi.
+- [x] Aggiunta copia autonoma dello storage SQLite e controllo CI per evitare divergenze.
+- [x] Documentati esempi di chiamata azioni e limiti del prototipo.
+- [ ] Eseguire CI GitHub e correggere eventuali errori.
+- [ ] Verificare compatibilità con la versione Home Assistant Core effettivamente installata.
+- [ ] Eseguire test runtime in istanza HA di prova prima di qualsiasi installazione reale.
+
 **Nota di isolamento:** nessun file in `homeassistant/packages/` o `esphome/` è stato modificato. Il prototipo non è installabile e non deve essere copiato nella configurazione attiva.
