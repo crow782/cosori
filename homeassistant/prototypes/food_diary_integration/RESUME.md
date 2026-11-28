@@ -55,7 +55,8 @@ Flusso previsto:
 
 La configurazione del prototipo è entity-based:
 - **Bilancia:** selezione di un'entità sensor ESPHome con device class weight. Selezionare il sensore stabile, non il peso raw.
-- **Barcode:** selezione diretta dell'entità sensor `sensor.barcode_scanner_last_barcode` o equivalente.\n- **Contatore scansioni:** selezione diretta dell'entità sensor `sensor.barcode_scanner_scan_count` o equivalente; il contatore incrementa a ogni lettura, anche se il barcode è identico.
+- **Barcode:** selezione diretta dell'entità sensor `sensor.barcode_scanner_last_barcode` o equivalente.
+- **Contatore scansioni:** selezione diretta dell'entità sensor `sensor.barcode_scanner_scan_count` o equivalente; il contatore incrementa a ogni lettura, anche se il barcode è identico.
 - Non si seleziona un device ESPHome scanner.
 - Non è richiesto un identificatore scanner nel payload.
 - Nessun firmware attivo è stato modificato.
@@ -96,7 +97,8 @@ Presenti:
 
 Config flow:
 - selettore sensore peso ESPHome/device class weight;
-- selettore generico sensor per barcode;\n- selettore generico sensor per contatore scansioni;
+- selettore generico sensor per barcode;
+- selettore generico sensor per contatore scansioni;
 - validazione delle tre entità nel registry;
 - options flow per entità, pasto default, autosave, timeout, soglia zero e Open Food Facts paese/lingua/abilitazione;
 - una sola config entry.
