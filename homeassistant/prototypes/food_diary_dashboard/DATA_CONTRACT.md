@@ -99,7 +99,7 @@ Vincoli:
 - Prima della scansione eseguire tara e verificare zero stabile.
 - Un solo prodotto pendente per sessione; evitare sovrascrittura del barcode.
 - La pesata non va persa se il barcode non esiste in OFF.
-- Prima della scrittura mostrare riepilogo e conferma; la registrazione automatica dopo peso stabile potrà essere abilitata come preferenza solo dopo aver verificato il flusso end-to-end.
+- L'utente ha scelto la registrazione automatica quando il peso diventa stabile; mantenere l'opzione attiva di default, ma verificare il flusso end-to-end prima dell'uso reale.
 - La bilancia non esegue tara via BLE secondo le verifiche attuali: la tara è un'operazione fisica.
 
 ## 6. Responsabilità del frontend
@@ -118,11 +118,13 @@ Versione di riferimento comunicata dall'utente: Home Assistant Core 2026.11.3, S
 
 La configurazione finale sarà tramite config flow e options flow:
 - selezione del sensore peso stabile con entity selector (dominio sensor, device class weight, integrazione ESPHome);
-- selezione del device scanner con device selector filtrato su ESPHome;
+- selezione diretta dell'entità scanner tramite entity selector generico sul dominio `sensor`, ad esempio `sensor.barcode_scanner_last_barcode`;
 - nessun MAC BLE o UUID GATT da inserire manualmente;
 - opzioni per pasto predefinito, salvataggio automatico, timeout, soglia zero e lookup Open Food Facts.
 
-Il firmware attuale invia `esphome.barcode_scanned` con il solo campo `barcode`. Per distinguere più scanner, il payload dovrà includere un identificatore stabile del nodo ESPHome, verificato rispetto al device registry. Questa modifica al firmware è pianificata ma non ancora eseguita.
+Il firmware ESPHome attuale espone anche un'entità `text_sensor`/`sensor` che contiene l'ultimo barcode, ad esempio `sensor.barcode_scanner_last_barcode`. Il config flow prototipo seleziona direttamente questa entità: non è necessario identificare il device ESPHome né aggiungere un ID al payload. Il firmware continua inoltre a emettere `esphome.barcode_scanned`, ma il flusso definitivo previsto è entity-based.
+
+Il runtime dovrà ascoltare gli aggiornamenti dell'entità selezionata. Per coprire letture ripetute con lo stesso valore, valutare sia `state_changed` sia `state_reported`: Home Assistant documenta `state_reported` quando un'entità riporta lo stesso stato senza variazioni. Resta da verificare che la piattaforma ESPHome aggiorni effettivamente l'entità a ogni scansione identica; se non lo fa, servirà un trigger firmware/evento supplementare. Non basarsi su `last_changed` per distinguere ogni scansione.
 
 Per mantenere un'unica installazione HACS, la direzione scelta è un pannello Aurora incluso nella cartella dell'integrazione, servito localmente e registrato tramite API pubbliche di Home Assistant. Il frontend non avrà dipendenze CDN o framework di nicchia. Se il pannello non supera i test sulle release target, fallback a dashboard Lovelace con card native.
 
