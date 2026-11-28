@@ -1,0 +1,70 @@
+name: Food Diary prototype checks
+
+on:
+  push:
+    branches:
+      - "waage+scanner"
+    paths:
+      - "homeassistant/prototypes/food_diary_integration/**"
+      - "homeassistant/prototypes/food_diary_sqlite/**"
+      - ".github/workflows/food-diary-prototype.yml"
+  pull_request:
+    paths:
+      - "homeassistant/prototypes/food_diary_integration/**"
+      - "homeassistant/prototypes/food_diary_sqlite/**"
+      - ".github/workflows/food-diary-prototype.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prototype:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile Python sources
+        run: |
+          python -m compileall -q \
+            homeassistant/prototypes/food_diary_integration/custom_components/food_diary \
+            homeassistant/prototypes/food_diary_sqlite
+
+      - name: Check Aurora Lovelace card JavaScript
+        run: |
+          node --check homeassistant/prototypes/food_diary_integration/custom_components/food_diary/www/food-diary-card.js
+
+      - name: Validate integration JSON
+        run: |
+          python -m json.tool homeassistant/prototypes/food_diary_integration/custom_components/food_diary/manifest.json > /dev/null
+          python -m json.tool homeassistant/prototypes/food_diary_integration/custom_components/food_diary/translations/en.json > /dev/null
+          python -m json.tool homeassistant/prototypes/food_diary_integration/custom_components/food_diary/translations/it.json > /dev/null
+
+      - name: Check storage copies stay synchronized
+        run: |
+          cmp \
+            homeassistant/prototypes/food_diary_sqlite/storage.py \
+            homeassistant/prototypes/food_diary_integration/custom_components/food_diary/storage.py
+
+      - name: Run SQLite unit tests
+        env:
+          PYTHONPATH: homeassistant/prototypes/food_diary_sqlite
+        run: |
+          python -m unittest discover \
+            -s homeassistant/prototypes/food_diary_sqlite/tests \
+            -v
+
+      - name: Run acquisition unit tests
+        env:
+          PYTHONPATH: homeassistant/prototypes/food_diary_integration/custom_components
+        run: |
+          python -m unittest discover \
+            -s homeassistant/prototypes/food_diary_integration/custom_components/food_diary \
+            -p 'test_*.py' \
+            -v
