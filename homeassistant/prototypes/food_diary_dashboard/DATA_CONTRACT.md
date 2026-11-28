@@ -158,3 +158,7 @@ A scan session requires a valid barcode, a zero weight at or below the configure
 A non-zero weight at scan time does not count as the portion: the coordinator waits for zero and then a new positive stable reading. Tare remains a physical action; no tare BLE command is assumed.
 
 Unknown products remain pending so a manual catalogue item with the same barcode can resolve the session. A pending session with an already captured positive weight does not expire while waiting for the manual product. Pending sessions are currently memory-only and are lost on Home Assistant restart. Only one active session is supported; additional scans while it is pending are rejected to prevent accidental cross-association.
+
+## 11. Alternative product search
+
+The integration exposes a search_openfoodfacts action for text-based alternatives when a barcode lookup does not find a product. It uses Open Food Facts' legacy full-text endpoint, returns a bounded list of normalized product candidates, and does not insert candidates into the local catalogue. The user must explicitly select a candidate and add it through the add_food action. Missing or invalid nutrient fields remain NULL.
