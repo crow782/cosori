@@ -82,9 +82,9 @@ class FoodDiaryStore:
     def _initialize(self) -> None:
         with self._connect() as db:
             schema_version = int(db.execute("PRAGMA user_version").fetchone()[0])
-            if schema_version > 2:
+            if schema_version > 3:
                 raise RuntimeError(
-                    f"database schema version {schema_version} is newer than supported version 2"
+                    f"database schema version {schema_version} is newer than supported version 3"
                 )
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS foods (
@@ -129,6 +129,16 @@ class FoodDiaryStore:
                 );
                 CREATE INDEX IF NOT EXISTS idx_entries_consumed_at ON entries(consumed_at);
                 CREATE INDEX IF NOT EXISTS idx_entries_meal ON entries(meal_type);
+                CREATE TABLE IF NOT EXISTS pending_sessions (
+                    slot TEXT PRIMARY KEY CHECK(slot = 'active'),
+                    session_id TEXT NOT NULL UNIQUE,
+                    barcode TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_pending_sessions_expiry
+                    ON pending_sessions(expires_at);
             """)
             if schema_version < 2:
                 # Normalize legacy second-precision timestamps before comparing
@@ -146,6 +156,62 @@ class FoodDiaryStore:
                         (normalized, row["id"]),
                     )
                 db.execute("PRAGMA user_version = 2")
+            if schema_version < 3:
+                db.execute("PRAGMA user_version = 3")
+
+    def save_pending_session(
+        self, session_id: str, barcode: str, created_at: str,
+        expires_at: str,
+    ) -> dict[str, Any]:
+        """Persist the single active scan session without trusting its weight."""
+        session_id = str(session_id).strip()
+        barcode = str(barcode).strip()
+        if not session_id or not barcode:
+            raise ValueError("session_id and barcode are required")
+        created = _timestamp(created_at)
+        expires = _timestamp(expires_at)
+        if datetime.fromisoformat(expires) <= datetime.fromisoformat(created):
+            raise ValueError("expires_at must be later than created_at")
+        now = _now()
+        with self._connect() as db:
+            db.execute(
+                """INSERT INTO pending_sessions
+                   (slot, session_id, barcode, created_at, expires_at, updated_at)
+                   VALUES ('active', ?, ?, ?, ?, ?)
+                   ON CONFLICT(slot) DO UPDATE SET
+                     session_id=excluded.session_id,
+                     barcode=excluded.barcode,
+                     created_at=excluded.created_at,
+                     expires_at=excluded.expires_at,
+                     updated_at=excluded.updated_at""",
+                (session_id, barcode, created, expires, now),
+            )
+            row = db.execute(
+                "SELECT * FROM pending_sessions WHERE slot='active'"
+            ).fetchone()
+            return dict(row)
+
+    def get_pending_session(self) -> dict[str, Any] | None:
+        """Return the persisted session, if any; expiry is handled by the caller."""
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT * FROM pending_sessions WHERE slot='active'"
+            ).fetchone()
+            return dict(row) if row else None
+
+    def delete_pending_session(self, session_id: str | None = None) -> bool:
+        """Delete the active session, optionally only when its ID still matches."""
+        with self._connect() as db:
+            if session_id is None:
+                cursor = db.execute(
+                    "DELETE FROM pending_sessions WHERE slot='active'"
+                )
+            else:
+                cursor = db.execute(
+                    "DELETE FROM pending_sessions WHERE slot='active' AND session_id=?",
+                    (str(session_id),),
+                )
+            return cursor.rowcount > 0
 
     def add_food(
         self, name: str, *, brand: str | None = None, barcode: str | None = None,
