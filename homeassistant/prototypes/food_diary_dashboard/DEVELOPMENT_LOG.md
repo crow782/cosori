@@ -227,3 +227,16 @@ Causa unica dei cinque errori: `PendingScanSessionPersistenceTests` non definiva
 Correzione commit: `fca1e59589dd06d4601b5f848e5e97bbfb77e971`.
 
 La correzione è stata riletta su GitHub. Non è ancora disponibile una nuova run associata al commit di correzione: occorre rilanciare manualmente il workflow sul branch `waage+scanner`. Non dichiarare la CI verde finché il nuovo run non termina con successo.
+
+## Fase 17 — Sicurezza acquisizione dopo interruzione bilancia (2026-11-28)
+
+La revisione del coordinator ha evidenziato che un peso positivo già letto poteva restare valido se il sensore passava a unavailable prima che il lookup prodotto terminasse.
+
+Correzioni:
+- `ScanSession.observe_weight` ora invalida il peso memorizzato su lettura non valida/unavailable o negativa;
+- invalida anche la baseline zero, richiedendo una nuova tara dopo l'interruzione;
+- il coordinator mantiene il timeout breve anche durante l'attesa della nuova tara;
+- aggiunti test unitari per unavailable, peso negativo, nuova tara e soglia zero;
+- aggiornata la documentazione architetturale sulla persistenza SQLite delle sessioni pendenti.
+
+La CI #3 sul commit 70c86d0 era verde, ma precede questa fase. Occorre una nuova esecuzione manuale sul branch `waage+scanner`; i test Home Assistant runtime e hardware non sono ancora eseguiti.
