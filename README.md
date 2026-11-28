@@ -4,6 +4,10 @@ Independent investigation of the Cosori Nutrition Scale CNS-R101S for local BLE 
 
 > Project status: BLE identification, GATT map and weight-field decoding validated against three samples. The main GATT integration is in place; further validation of edge cases and device behavior remains possible.
 
+## Combined firmware and food diary plan
+
+- [Firmware integration and food diary workflow](docs/firmware-integration-and-food-diary.md): hardware compatibility, current firmware observations, recommended tare/scan/weigh sequence, Home Assistant HTTP offload, stability constraints and phased implementation plan.
+
 ## Firmware files
 
 - [esphome/cosori-discovery.yaml](esphome/cosori-discovery.yaml): scans for a Cosori scale and logs its BLE address and advertised service UUIDs. Use this for a new physical scale.
