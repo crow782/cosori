@@ -333,3 +333,28 @@ Causa unica dei cinque errori: `PendingScanSessionPersistenceTests` non definiva
 Correzione commit: `fca1e59589dd06d4601b5f848e5e97bbfb77e971`.
 
 La correzione è stata riletta su GitHub. Non è ancora disponibile una nuova run associata al commit di correzione: occorre rilanciare manualmente il workflow sul branch `waage+scanner`. Non dichiarare la CI verde finché il nuovo run non termina con successo.
+
+## Aggiornamento acquisizione peso — 2026-11-28
+
+Dopo la prima CI verde (run #46179491988, commit 70c86d0), la revisione del flusso ha individuato un rischio: un valore positivo già acquisito poteva rimanere valido se il sensore diventava `unknown`/`unavailable` o comunicava un valore negativo prima del completamento della ricerca prodotto.
+
+Correzione applicata in `acquisition.py`:
+- lettura `None`/unavailable o negativa invalida il peso precedentemente acquisito;
+- invalida anche la vecchia baseline zero: per riprendere serve una nuova tara/lettura zero e poi un nuovo peso positivo;
+- un valore negativo non può essere interpretato come tara.
+
+Correzione coordinatore:
+- il timeout breve resta attivo anche mentre si attende una nuova tara, non soltanto durante l'attesa del peso positivo.
+
+Test aggiunti in `test_acquisition.py`:
+- unavailable dopo un peso positivo;
+- valore negativo prima della tara;
+- valore negativo dopo un peso positivo;
+- nuova lettura positiva dopo unavailable, che non salva senza nuova tara;
+- valore esattamente pari alla soglia zero.
+
+Aggiornata anche `HACS_ARCHITECTURE.md`: la sessione barcode è persistente in SQLite per 24 ore; il peso e la baseline non sono ripristinati.
+
+Commit di codice di questa correzione: `428dbcc6` (coordinator), con modifiche precedenti a `acquisition.py` e `test_acquisition.py`.
+
+**Verifica ancora necessaria:** il run CI #3 verde precede queste modifiche. GitHub non ha avviato automaticamente un nuovo workflow per i commit via connettore; rilanciare manualmente `Food Diary prototype checks` sul branch `waage+scanner`. Non dichiarare ancora verdi i nuovi test. I test runtime Home Assistant e hardware restano da fare.
