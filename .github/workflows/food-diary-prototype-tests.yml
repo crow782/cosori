@@ -1,0 +1,40 @@
+name: Food Diary SQLite prototype tests
+
+on:
+  push:
+    branches:
+      - "waage+scanner"
+    paths:
+      - "homeassistant/prototypes/food_diary_sqlite/**"
+      - ".github/workflows/food-diary-prototype-tests.yml"
+  pull_request:
+    paths:
+      - "homeassistant/prototypes/food_diary_sqlite/**"
+      - ".github/workflows/food-diary-prototype-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sqlite-tests:
+    name: Python ${{ matrix.python-version }} tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: homeassistant/prototypes/food_diary_sqlite
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Compile source and tests
+        run: python -m py_compile storage.py tests/test_storage.py
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
