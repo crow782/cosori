@@ -1,10 +1,10 @@
-# Food Diary — architettura di distribuzione HACS
+# Food Diary — architettura di distribuzione Marketplace (catalogo HACS)
 
 > Specifica di destinazione. Il codice in `homeassistant/prototypes/` resta sperimentale: questo documento non certifica l'integrazione come installabile.
 
 ## 1. Obiettivo
 
-Distribuire Food Diary come integrazione completa per Home Assistant OS, installabile da HACS/Marketplace, configurabile interamente dalla UI e utilizzabile senza modificare `configuration.yaml`.
+Distribuire Food Diary come integrazione completa per Home Assistant OS, installabile dal Marketplace integrato di Home Assistant 2026.11+ (catalogo e strumenti di pubblicazione HACS), configurabile interamente dalla UI e utilizzabile senza modificare `configuration.yaml`.
 
 Versione di riferimento per lo sviluppo: Home Assistant Core 2026.11.3, Supervisor 2026.11.0, OS 18.4, Frontend 20261028.8. L'obiettivo è supportare il maggior numero possibile di release Core 2026, non soltanto la versione di riferimento.
 
@@ -48,7 +48,9 @@ food-diary/
 
 Il repository Cosori rimane la sede di sviluppo e documentazione finché il repository dedicato non sarà creato e validato. Non spostare o cancellare i prototipi durante questa fase.
 
-## 3. HACS / Marketplace
+## 3. Marketplace / catalogo HACS
+
+Su Home Assistant 2026.11 e successivi l'utente installa dal menu **Impostazioni → Marketplace**: non deve installare la vecchia integrazione HACS separatamente. Il nome HACS resta rilevante per il catalogo, il file `hacs.json` e gli strumenti di validazione/pubblicazione.
 
 Il repository pubblico dedicato dovrà avere:
 - un solo componente sotto `custom_components/food_diary/`;
@@ -134,3 +136,8 @@ Prima della release:
 9. prova backup e ripristino del database.
 
 Nessuna versione sarà marcata stabile finché questi controlli non saranno superati. Il firmware e il package attivi dell'utente resteranno separati fino alla validazione end-to-end.
+
+
+## 9. Nota specifica per Home Assistant 2026.11.3
+
+L'installazione utente prevista è Marketplace integrato. La pubblicazione del repository continua a seguire i requisiti del catalogo HACS/Marketplace. La vecchia custom integration `hacs` non va installata né aggiunta come dipendenza dell'integrazione Food Diary.
