@@ -109,13 +109,15 @@ Runtime:
 - operazioni SQLite eseguite nell'executor;
 - rimuove le azioni al unload e ricarica l'integrazione al cambio opzioni.
 
-Non ancora presenti:
-- coordinator/state machine scanner-peso;
-- listener dell'entità contatore scansioni e lettura dell'entità barcode;
-- correlazione barcode/peso e gestione timeout/duplicati;
-- lookup Open Food Facts nel runtime dell'integrazione;
-- gestione sessione prodotto sconosciuto;
-- entità diagnostiche;
+Presenti come prototipo, da validare:
+- coordinator con listener del contatore e dell'entità peso;
+- evento esphome.barcode_scanned come payload della singola lettura, gated dal contatore selezionato;
+- fallback entity-based per scanner generici senza evento ESPHome;
+- correlazione barcode/peso con baseline zero, timeout, sessione singola e protezione dai salvataggi doppi;
+- lookup Open Food Facts v2 con sessione aiohttp condivisa di Home Assistant;
+- sessione prodotto sconosciuto risolvibile aggiungendo alimento con lo stesso barcode;
+- azioni per salvare/annullare la sessione pendente e sensori diagnostici;
+- test unitari puri per parsing barcode/peso, soglia zero e parsing nutrienti.
 - pannello Aurora connesso al backend.
 
 ### Storage SQLite
@@ -189,10 +191,10 @@ python -m py_compile storage.py tests/test_storage.py
 1. **Verifica statica del config flow** rispetto alle API pubbliche di Core 2026.11.3: selector, entity registry, OptionsFlow, setup/unload e traduzioni.
 2. **Coordinator**: listener del contatore scansioni selezionato e lettura dell'entità barcode, state_changed/state_reported, normalizzazione e validazione barcode, gestione letture identiche, entità unavailable e cambi opzioni.
 3. **State machine peso**: zero stabile prima della scansione, barcode pendente, peso positivo stabile, conversione unità g/kg, timeout, peso negativo/non valido, sessione concorrente, annullamento e ripristino dopo errore.
-4. **Lookup**: catalogo locale prima; Open Food Facts via client HTTP nativo HA/aiohttp, timeout, error handling, paese/lingua; non bloccare la pesata quando il barcode è sconosciuto.
+4. **Lookup**: prototipo Open Food Facts v2 implementato; aggiungere test HTTP mock e verificare parametri paese/lingua, status 404, timeout e rate-limit.
 5. **Persistenza e servizi**: integrazione coordinator-storage, selezione pasto, autosave e gestione prodotto sconosciuto.
 6. **Test automatici**: unit test coordinator/state machine con fake hass e state/event bus; test config flow; test servizi e migrazioni.
-7. **Diagnostica**: sensori leggeri per stato, ultimo barcode e stato acquisizione.
+7. **Diagnostica**: sensori base implementati; verificare naming, unique_id e stati in HA.
 8. **Frontend**: collegare il mockup Aurora alle azioni e al flusso reale; valutare API pannello pubbliche e mantenere fallback Lovelace.
 9. **Validazione**: hassfest, ruff, test HA Core versione minima e ultima release 2026, installazione/upgrade/unload su istanza HA di prova, backup/restore.
 10. Solo dopo i gate: creare repository pubblico dedicato e preparare packaging HACS/Marketplace.
@@ -204,3 +206,24 @@ python -m py_compile storage.py tests/test_storage.py
 - secrets e configurazione attiva HA.
 
 Qualsiasi esperimento sul firmware va fatto su una copia di sviluppo isolata. Non spostare i prototipi nel percorso attivo e non creare ancora il repository HACS pubblico.
+
+
+## 9. Aggiornamento runtime — 2026-11-28
+
+Sono stati aggiunti:
+- acquisition.py: normalizzazione barcode, conversione peso in grammi, stato sessione con obbligo zero seguito da peso positivo, parser Open Food Facts con nutrienti ignoti mantenuti None;
+- coordinator.py: ascolto state_changed del contatore e del sensore peso; ascolto evento esphome.barcode_scanned; lookup catalogo locale/Open Food Facts; sessione singola; timeout; salvataggio con lock; callback quando viene inserito manualmente un alimento;
+- sensor.py: sensori diagnostici;
+- azioni save_pending, discard_pending e get_status;
+- test_acquisition.py: test standard-library per barcode, unità peso, baseline zero e parser OFF;
+- workflow CI esteso ai test acquisition.
+
+Dettaglio firmware accertato leggendo esphome/cosori-barcode-integrated.yaml: su ogni valore di barcode_raw, ESPHome incrementa e pubblica scan_count, poi pubblica last_barcode, quindi dopo 300 ms invia esphome.barcode_scanned con il barcode. Il coordinatore usa il contatore come guardia e il payload evento come codice della specifica scansione; per scanner generici senza evento usa fallback a 800 ms solo se è arrivato un singolo incremento. Più incrementi senza eventi corrispondenti sono marcati ambigui e non vengono salvati automaticamente.
+
+Limiti noti:
+- il coordinator non è ancora testato dentro HA Core;
+- la sessione pendente è in RAM e si perde a riavvio HA;
+- un solo prodotto/sessione alla volta;
+- una scansione iniziata mentre un'altra sessione è ancora pendente viene rifiutata con stato session_busy;
+- il fallback per scanner generici non può ricostruire barcode intermedi se più scansioni avvengono prima della lettura; in tal caso non salva;
+- il firmware attivo non è stato modificato.
