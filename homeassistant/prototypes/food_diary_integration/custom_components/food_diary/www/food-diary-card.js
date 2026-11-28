@@ -361,11 +361,15 @@ class FoodDiaryAuroraCard extends HTMLElement {
   }
 }
 
-customElements.define("food-diary-aurora", FoodDiaryAuroraCard);
+if (!customElements.get("food-diary-aurora")) {
+  customElements.define("food-diary-aurora", FoodDiaryAuroraCard);
+}
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "food-diary-aurora",
-  name: "Food Diary Aurora",
-  description: "Diario alimentare con bilancia, barcode e statistiche",
-  preview: false
-});
+if (!window.customCards.some((card) => card.type === "food-diary-aurora")) {
+  window.customCards.push({
+    type: "food-diary-aurora",
+    name: "Food Diary Aurora",
+    description: "Diario alimentare con bilancia, barcode e statistiche",
+    preview: false
+  });
+}
