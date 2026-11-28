@@ -35,3 +35,13 @@ Creato `DATA_CONTRACT.md` dopo aver verificato il codice reale di storage e dell
 
 ## Prossimo passo
 Estendere e testare il contratto riepiloghi nel backend (coverage nutrienti e media con denominatore esplicito), quindi verificare l'integrazione su una istanza HA di prova. Dopo aver conosciuto la versione Home Assistant effettiva, scegliere il frontend e collegare le viste.
+
+## Fase 5 — Copertura nutrienti e media giornaliera nel prototipo SQLite
+- Aggiunta copertura per nutriente: conteggio valori noti/mancanti e flag di completezza.
+- Aggiunti `days_with_energy_data`, `average_days_count` e `average_daily_energy_kcal` alla risposta `period_summary`.
+- I giorni senza registrazioni non entrano nella media; i giorni con tutte le kcal sconosciute non possono contribuire a una media kcal.
+- Le giornate con almeno una kcal nota ma altre voci senza kcal mantengono il totale parziale, marcato come incompleto dalla copertura.
+- Aggiornata anche la copia `storage.py` inclusa nell'integrazione: i due file devono restare sincronizzati.
+- Aggiunti test per media su giorni con kcal note, giornate con kcal completamente sconosciute e copertura parziale.
+
+**Stato:** modifiche committate, ma non ancora validate da esecuzione locale o CI. Non dichiarare i test superati finché GitHub Actions non completa la matrice.
