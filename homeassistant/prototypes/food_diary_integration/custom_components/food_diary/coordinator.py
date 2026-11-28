@@ -613,6 +613,7 @@ class FoodDiaryCoordinator:
                         session.weight_g,
                         self.config.get(CONF_DEFAULT_MEAL, "snack"),
                         source="scan",
+                        pending_session_id=self._session_id,
                     )
                 )
             except Exception:
@@ -626,13 +627,8 @@ class FoodDiaryCoordinator:
                 self.last_entry = entry
                 self.state = "saved"
                 self.last_error = None
-                session_id = self._session_id
                 self._session = None
                 self._clear_session_metadata()
-                if session_id:
-                    await self.hass.async_add_executor_job(
-                        self.store.delete_pending_session, session_id
-                    )
                 self._notify()
             return entry
 
