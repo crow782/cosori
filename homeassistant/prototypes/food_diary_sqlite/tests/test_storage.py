@@ -119,6 +119,47 @@ class FoodDiaryStoreTests(unittest.TestCase):
         self.assertIsNone(summary["totals"]["energy_kcal"])
         self.assertEqual(summary["entry_count"], 1)
 
+    def test_summary_average_uses_only_days_with_known_energy(self):
+        known = self.store.add_food("Alimento noto", nutrients_per_100g={"energy_kcal": 100})
+        unknown = self.store.add_food("Alimento senza kcal")
+        self.store.add_entry(
+            known["id"], 100, "breakfast",
+            consumed_at="2026-11-23T08:00:00+01:00",
+        )
+        self.store.add_entry(
+            unknown["id"], 100, "lunch",
+            consumed_at="2026-11-24T12:00:00+01:00",
+        )
+        self.store.add_entry(
+            known["id"], 200, "dinner",
+            consumed_at="2026-11-25T19:00:00+01:00",
+        )
+        summary = self.store.period_summary("week", "2026-11-25", "Europe/Rome")
+        self.assertEqual(summary["days_with_entries"], 3)
+        self.assertEqual(summary["days_with_energy_data"], 2)
+        self.assertEqual(summary["average_days_count"], 2)
+        self.assertEqual(summary["average_daily_energy_kcal"], 150)
+        self.assertEqual(summary["nutrient_coverage"]["energy_kcal"]["known_entries"], 2)
+        self.assertEqual(summary["nutrient_coverage"]["energy_kcal"]["missing_entries"], 1)
+        self.assertFalse(summary["nutrient_coverage"]["energy_kcal"]["complete"])
+        unknown_day = next(day for day in summary["by_day"] if day["date"] == "2026-11-24")
+        self.assertIsNone(unknown_day["totals"]["energy_kcal"])
+        self.assertEqual(
+            unknown_day["nutrient_coverage"]["energy_kcal"]["missing_entries"], 1
+        )
+
+    def test_summary_average_is_none_when_no_energy_values_exist(self):
+        food = self.store.add_food("Senza valori")
+        self.store.add_entry(
+            food["id"], 50, "snack",
+            consumed_at="2026-11-28T15:00:00+01:00",
+        )
+        summary = self.store.period_summary("day", "2026-11-28", "Europe/Rome")
+        self.assertEqual(summary["days_with_entries"], 1)
+        self.assertEqual(summary["days_with_energy_data"], 0)
+        self.assertEqual(summary["average_days_count"], 0)
+        self.assertIsNone(summary["average_daily_energy_kcal"])
+
     def test_period_summary_rejects_invalid_period_and_timezone(self):
         with self.assertRaises(ValueError):
             self.store.period_summary("year", "2026-11-28", "Europe/Rome")
