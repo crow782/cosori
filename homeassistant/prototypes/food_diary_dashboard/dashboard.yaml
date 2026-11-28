@@ -1,0 +1,17 @@
+# Example Lovelace dashboard for Food Diary Aurora.
+# Storage mode: add the resource once in Settings -> Dashboards -> Resources:
+#   URL: /food_diary/food-diary-card.js?v=0.1.0
+#   Type: JavaScript module
+#
+# YAML mode: add the same resource under lovelace.resources in configuration.yaml.
+
+title: Food Diary
+views:
+  - title: Diario
+    path: food-diary
+    icon: mdi:food-apple
+    type: panel
+    cards:
+      - type: custom:food-diary-aurora
+        status_entity: sensor.food_diary_status
+        scan_count_entity: sensor.food_diary_scan_count
