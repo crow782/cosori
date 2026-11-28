@@ -81,6 +81,18 @@ def async_setup_services(hass: HomeAssistant) -> None:
             )
         }
 
+    async def search_openfoodfacts(call: ServiceCall):
+        coordinator = hass.data.get(DOMAIN, {}).get("coordinator")
+        if coordinator is None:
+            raise ServiceValidationError("Food Diary coordinator is not loaded")
+        try:
+            products = await coordinator.async_search_openfoodfacts(
+                call.data["query"], call.data.get("limit", 20)
+            )
+        except (ValueError, aiohttp.ClientError, asyncio.TimeoutError) as err:
+            raise ServiceValidationError(str(err)) from err
+        return {"products": products}
+
     async def find_food_by_barcode(call: ServiceCall):
         food = await _run(
             hass, _store(hass).find_food_by_barcode, call.data["barcode"]
@@ -187,6 +199,14 @@ def async_setup_services(hass: HomeAssistant) -> None:
             search_foods,
             SupportsResponse.ONLY,
         ),
+        "search_openfoodfacts": (
+            vol.Schema({
+                vol.Required("query"): vol.All(cv.string, vol.Length(min=2, max=100)),
+                vol.Optional("limit", default=20): vol.All(vol.Coerce(int), vol.Range(min=1, max=50)),
+            }),
+            search_openfoodfacts,
+            SupportsResponse.ONLY,
+        ),
         "find_food_by_barcode": (
             vol.Schema({vol.Required("barcode"): cv.string}),
             find_food_by_barcode,
@@ -262,6 +282,7 @@ def async_unload_services(hass: HomeAssistant) -> None:
         "delete_food",
         "search_foods",
         "find_food_by_barcode",
+        "search_openfoodfacts",
         "add_entry",
         "list_entries",
         "delete_entry",
