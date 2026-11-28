@@ -481,6 +481,7 @@ class FoodDiaryCoordinator:
         session = self._session
         if session is None or session.barcode != barcode:
             return
+        lookup_failed = False
         try:
             food = await self.hass.async_add_executor_job(
                 self.store.find_food_by_barcode, barcode
@@ -489,10 +490,12 @@ class FoodDiaryCoordinator:
                 food = await self._async_lookup_openfoodfacts(barcode)
         except (OSError, ValueError, aiohttp.ClientError, asyncio.TimeoutError) as err:
             _LOGGER.warning("Food Diary product lookup failed: %s", err)
-            self.last_error = "product_lookup_failed"
+            lookup_failed = True
             food = None
         if self._session is not session:
             return
+        if lookup_failed:
+            self.last_error = "product_lookup_failed"
         if food is None:
             session.status = "unknown_product"
             self.state = "unknown_product"
