@@ -10,7 +10,7 @@ import math
 import sqlite3
 import uuid
 from datetime import date, datetime, timedelta, timezone
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -299,7 +299,7 @@ class FoodDiaryStore:
 
         try:
             local_zone = ZoneInfo(timezone_name)
-        except (TypeError, ValueError) as exc:
+        except (TypeError, ValueError, ZoneInfoNotFoundError) as exc:
             raise ValueError("timezone_name must be a valid IANA timezone") from exc
 
         if period == "day":
