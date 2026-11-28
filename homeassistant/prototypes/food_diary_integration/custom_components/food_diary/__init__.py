@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -18,8 +21,16 @@ PLATFORMS = [Platform.SENSOR]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Prepare integration domain data."""
+    """Prepare integration domain data and serve the bundled Lovelace module."""
     hass.data.setdefault(DOMAIN, {})
+    static_path = StaticPathConfig(
+        f"/{DOMAIN}", Path(__file__).parent / "www", False
+    )
+    try:
+        await hass.http.async_register_static_paths([static_path])
+    except RuntimeError:
+        # The path may already be registered after an integration reload.
+        pass
     return True
 
 
