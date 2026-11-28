@@ -144,7 +144,11 @@ class FoodDiaryCoordinator:
         if self._timeout_cancel:
             self._timeout_cancel()
             self._timeout_cancel = None
+        if self._session_expiry_cancel:
+            self._session_expiry_cancel()
+            self._session_expiry_cancel = None
         async with self._save_lock:
+            # Keep the durable SQLite record for a later config-entry reload.
             self._session = None
             self._pending_counter_events = 0
         self._listeners.clear()
