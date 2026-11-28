@@ -115,8 +115,8 @@ Non è ancora un diario storico: non registra una serie di pasti, non assegna gl
 - [x] Verificata la lista delle azioni realmente registrate nell'integrazione sperimentale.
 - [x] Evidenziato il gap: `period_summary` non espone ancora media giornaliera né copertura dei nutrienti.
 - [x] Aggiornato il mockup storico per mostrare un giorno senza registrazioni come N/D.
-- [ ] Estendere riepiloghi SQLite con copertura nutrienti e denominatore esplicito della media.
-- [ ] Aggiungere ed eseguire test per giornate senza dati, nutrienti kcal mancanti e medie.
+- [x] Estendere riepiloghi SQLite con copertura nutrienti e denominatore esplicito della media.
+- [x] Aggiungere test per giornate senza dati, nutrienti kcal mancanti e medie.\n- [ ] Eseguire e verificare la matrice CI Python 3.10–3.13.
 - [ ] Verificare versione Home Assistant Core e supporto frontend per risposte delle azioni.
 - [ ] Scegliere card native con helper/script oppure custom Lovelace card.
 - [ ] Collegare dashboard solo dopo test backend su istanza HA separata.
