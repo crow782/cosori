@@ -112,7 +112,21 @@ La dashboard deve:
 - inviare data/ora con offset esplicito o lasciare che l'integrazione usi il proprio orologio configurato;
 - ricaricare il riepilogo dopo ogni aggiunta, modifica o cancellazione.
 
-Decisione frontend ancora da prendere: card Lovelace native con helper/script di appoggio oppure custom Lovelace card. Per una UI Aurora con ricerca dinamica, risultati delle azioni e form ricchi, una custom card dedicata è probabilmente più lineare; va però verificato il meccanismo frontend supportato dalla versione Home Assistant installata prima di scrivere codice.
+## 6. Configurazione dispositivi e frontend
+
+Versione di riferimento comunicata dall'utente: Home Assistant Core 2026.11.3, Supervisor 2026.11.0, OS 18.4, Frontend 20261028.8. L'obiettivo è mantenere compatibilità con il maggior numero possibile di release Core 2026.
+
+La configurazione finale sarà tramite config flow e options flow:
+- selezione del sensore peso stabile con entity selector (dominio sensor, device class weight, integrazione ESPHome);
+- selezione del device scanner con device selector filtrato su ESPHome;
+- nessun MAC BLE o UUID GATT da inserire manualmente;
+- opzioni per pasto predefinito, salvataggio automatico, timeout, soglia zero e lookup Open Food Facts.
+
+Il firmware attuale invia `esphome.barcode_scanned` con il solo campo `barcode`. Per distinguere più scanner, il payload dovrà includere un identificatore stabile del nodo ESPHome, verificato rispetto al device registry. Questa modifica al firmware è pianificata ma non ancora eseguita.
+
+Per mantenere un'unica installazione HACS, la direzione scelta è un pannello Aurora incluso nella cartella dell'integrazione, servito localmente e registrato tramite API pubbliche di Home Assistant. Il frontend non avrà dipendenze CDN o framework di nicchia. Se il pannello non supera i test sulle release target, fallback a dashboard Lovelace con card native.
+
+Dettagli packaging: [HACS_ARCHITECTURE.md](../food_diary_integration/HACS_ARCHITECTURE.md).
 
 ## 7. Sicurezza e persistenza
 - Database nel percorso di configurazione Home Assistant, non nella directory del repository.
