@@ -1,6 +1,6 @@
 # Piano di integrazione: Cosori + GM67 + Home Assistant
 
-> Stato: aggiornato con la rimozione del Bluetooth proxy, l'invio immediato del barcode, il ritorno dei dati nutrizionali al display tramite API ESPHome e il contatore kcal in Home Assistant. I firmware Cosori e scanner sono ancora configurazioni separate; **le modifiche non certificano una compilazione o una prova sul dispositivo.**
+> Stato: creato il firmware integrato `esphome/cosori-barcode-integrated.yaml`, con BLE GATT Cosori, GM67, OLED, invio barcode immediato e ritorno dei dati nutrizionali tramite API ESPHome. Bluetooth proxy assente. **Il file non è ancora compilato né provato sul dispositivo.**
 
 ## 1. Obiettivo e hardware
 
@@ -193,30 +193,26 @@ Mantenere inizialmente i parametri di scansione predefiniti del tracker, senza i
 - Conservare il display con un aggiornamento moderato; 250 ms è già sufficiente per un OLED di stato.
 - Evitare di eseguire contemporaneamente più richieste o script lunghi sul microcontrollore.
 
-## 7. Unificazione YAML: criteri
+## 7. Firmware integrato
 
-I due file non vanno concatenati. Devono diventare una sola configurazione ESPHome con una sola dichiarazione per ogni sezione di primo livello.
+Il file operativo per un solo ESP32 è `esphome/cosori-barcode-integrated.yaml`. Mantiene il node name `barcode-scanner`, così il servizio Home Assistant resta `esphome.barcode_scanner_show_food_result`.
 
-Sezioni da unificare:
-- `esphome`: nome unico, friendly name, `compile_process_limit`; trasferire solo le automazioni di boot necessarie.
-- `esp32`: una sola scheda `esp32dev`, framework ESP-IDF e opzioni SDK verificate.
-- `logger`: un solo logger con livelli selettivi.
-- `api`: una sola API con una sola chiave in secrets.
-- `ota`: una sola configurazione OTA.
-- `wifi`: una sola configurazione, con fallback AP e captive portal.
-- `captive_portal`: una sola dichiarazione.
-- `esp32_ble_tracker`, `ble_client`: mantenere la connessione BLE diretta Cosori; non aggiungere `bluetooth_proxy`.
-- `uart`, `i2c`, `display`, `font`, `binary_sensor`, `script`, `select`, `switch`, `number`, `text_sensor`, `sensor`, `globals`, `interval`: unire le liste e i blocchi evitando ID duplicati.
-- Rimuovere `http_request` e `json` dal firmware barcode se non rimane alcun altro uso.
+La configurazione combina:
+- BLE tracker e client GATT diretto della Cosori;
+- UART2 per GM67, OLED SSD1306 e pulsante;
+- API ESPHome con evento barcode in uscita e azione `show_food_result` in ingresso;
+- Wi-Fi con `power_save_mode: none` e fallback AP;
+- nessun `bluetooth_proxy`, `http_request` o componente `json`.
 
-Ulteriori correzioni prima della fusione:
-1. Il firmware barcode deve emettere `esphome.barcode_scanned` appena il parser UART riconosce il barcode, senza attendere HTTP.
-2. L'evento deve contenere almeno `barcode`; aggiungere eventualmente un contatore/session ID per identificare ogni scansione.
-3. Aggiungere fallback AP alla configurazione Wi-Fi unificata.
-4. Rimuovere il requisito `minimum_chip_revision: "3.0"` se la revisione reale del chip non lo soddisfa o se non è necessario.
-5. Eliminare il placeholder Authorization e l'URL localhost, che non devono restare nel firmware.
-6. Verificare che il file sorgente `barcode.yaml` usi solo `!secret api_encryption_key` e `!secret ota_password`; non copiare credenziali letterali.
-7. Mantenere segreti solo in `secrets.yaml`, escluso da Git.
+Il vincolo `minimum_chip_revision: "3.0"` del firmware scanner separato è stato omesso dal firmware integrato per non escludere preventivamente le comuni schede ESP32 DevKit V1 con revisioni precedenti. L'opzione `sram1_as_iram` e il watchdog a 15 secondi sono mantenuti.
+
+I file separati `barcode.yaml`, `barcode scanner.yaml` e `esphome/cosori-cns-r101s.yaml` restano come configurazioni di riferimento, ma per usare bilancia e scanner sullo stesso ESP32 va flashato il file integrato.
+
+**Non dichiarare il firmware pronto all'uso finché non è stato compilato con la versione ESPHome effettivamente installata e provato sul dispositivo.** Verificare in particolare:
+- che il modulo ESP32 montato sulla scheda esponga GPIO16 e GPIO17 (alcuni moduli WROVER li riservano alla PSRAM);
+- che il MAC BLE della bilancia corrisponda all'unità reale;
+- che API, OTA, fallback AP, UART, OLED e ricezione delle notifiche BLE funzionino insieme;
+- che l'azione `esphome.barcode_scanner_show_food_result` sia visibile in Home Assistant dopo l'aggiornamento firmware.
 
 ## 8. Piano di implementazione a fasi
 
@@ -228,24 +224,23 @@ L'ordine è intenzionale: dopo ogni fase si deve poter tornare a un firmware fun
 - Verificare alimentazione stabile: scanner GM67 e OLED non devono provocare cadute di tensione o reset dell'ESP32.
 - Compilare e provare separatamente il firmware scanner attuale e quello Cosori.
 
-### Fase 1 — Unificazione minima, senza proxy
-- Unire le sezioni YAML e mantenere Cosori GATT + GM67 UART + OLED + pulsante.
-- Non configurare il Bluetooth proxy.
-- Eliminare completamente HTTP/JSON dal firmware barcode.
-- Pubblicare l'evento barcode via API ESPHome.
-- Conservare il sensore Raw e Stable della bilancia.
-- Verificare compilazione, avvio, API, OTA, scansione barcode e peso per almeno alcune ore.
+### Fase 1 — Firmware integrato, senza proxy
+- File creato: `esphome/cosori-barcode-integrated.yaml`.
+- La configurazione unisce Cosori GATT + GM67 UART + OLED + pulsante.
+- Bluetooth proxy e HTTP/JSON sul microcontrollore sono assenti.
+- L'evento barcode viene inviato subito tramite API ESPHome.
+- Restano da eseguire compilazione, flash e test prolungato di API, OTA, scansione e peso.
 
 ### Fase 2 — Diario Home Assistant
-- Adeguare il package per la macchina a stati descritta sopra.
+- Package aggiornato con lookup Open Food Facts, calcolo kcal della porzione e totale progressivo.
 - Testare tare, scansione, aggiunta, peso stabile, lookup Open Food Facts e prodotto sconosciuto.
-- Aggiungere feedback di acquisizione barcode e timeout.
-- Testare due o più prodotti in sequenza e verificare che non ci siano associazioni incrociate.
+- La robustezza dell'associazione barcode/peso (stati, timeout, session ID e scansioni ravvicinate) resta da verificare e rafforzare.
 
 ### Fase 3 — Feedback nutrizionale sul display
-- Dopo la risposta Open Food Facts, Home Assistant richiama `esphome.barcode_scanner_show_food_result`.
+- Firmware e package sono predisposti per l'azione `esphome.barcode_scanner_show_food_result`.
 - Il display mostra peso, kcal della porzione e kcal cumulative.
 - Il totale aumenta solo quando è disponibile un valore energetico e può essere azzerato con `input_button.food_diary_reset_total_kcal`.
+- Resta da verificare il flusso end-to-end con Home Assistant e OLED reali.
 
 ### Fase 4 — Diario persistente e interfaccia
 - Salvare ogni porzione come voce distinta, con data/ora, pasto, barcode, nome, peso e nutrienti.
