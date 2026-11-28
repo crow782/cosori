@@ -83,16 +83,16 @@ as entity states. See the official [integration service actions guide](https://d
 
 The config flow now asks for:
 - an ESPHome sensor entity filtered to the weight device class;
-- a generic Home Assistant `sensor` entity that publishes the last scanned barcode (for example `sensor.barcode_scanner_last_barcode`).
+- a generic Home Assistant `sensor` entity that publishes the last scanned barcode (for example `sensor.barcode_scanner_last_barcode`);\n- a generic Home Assistant `sensor` entity used as the scan counter trigger (for example `sensor.barcode_scanner_scan_count`).
 
-The options flow allows changing both entity selections and configuring default meal,
+The options flow allows changing all three entity selections and configuring default meal,
 automatic save, weight timeout, zero threshold, and Open Food Facts country,
 language and enablement. Both entities are validated against Home Assistant's
 entity registry.
 
 The scanner is identified by its selected entity, not by an ESPHome device or
 event payload identifier. This avoids requiring a firmware change and allows
-other barcode readers that publish a sensor state. Runtime listening still needs implementation and testing. The planned listener should account for both `state_changed` and, where emitted by the entity platform, `state_reported` events. Home Assistant can report an unchanged state through `state_reported`, but it must be verified whether the ESPHome text sensor republishes each identical scan. If it does not, a dedicated event or scan counter will be needed in a development firmware copy. No active firmware was changed.
+other barcode readers that publish a sensor state. The user confirmed that `sensor.barcode_scanner_scan_count` increments on every scan, including repeated identical barcodes. Runtime should listen to `state_changed` on the selected counter and then read the selected barcode entity. Publication ordering must be tested to avoid pairing a new counter value with a stale barcode. The planned listener should account for both `state_changed` and, where emitted by the entity platform, `state_reported` events. Home Assistant can report an unchanged state through `state_reported`, but it must be verified whether the ESPHome text sensor republishes each identical scan. If it does not, a dedicated event or scan counter will be needed in a development firmware copy. No active firmware was changed.
 
 ## Actions
 
