@@ -43,6 +43,9 @@ def _options_schema() -> vol.Schema:
         vol.Required(CONF_BARCODE_ENTITY): EntitySelector(
             EntitySelectorConfig(domain="sensor")
         ),
+        vol.Required(CONF_SCAN_COUNT_ENTITY): EntitySelector(
+            EntitySelectorConfig(domain="sensor")
+        ),
         vol.Required(CONF_DEFAULT_MEAL): vol.In(MEALS),
         vol.Required(CONF_AUTO_SAVE): BooleanSelector(),
         vol.Required(CONF_WEIGHT_TIMEOUT): vol.All(vol.Coerce(int), vol.Range(min=10, max=600)),
@@ -106,7 +109,10 @@ class FoodDiaryOptionsFlow(OptionsFlow):
         current = {**DEFAULT_OPTIONS, **self.config_entry.data, **self.config_entry.options}
         errors: dict[str, str] = {}
         if user_input is not None:
-            error = await _validate_entity_selection(self.hass, user_input[CONF_WEIGHT_ENTITY], user_input[CONF_BARCODE_ENTITY])
+            error = await _validate_entity_selection(
+                self.hass, user_input[CONF_WEIGHT_ENTITY],
+                user_input[CONF_BARCODE_ENTITY], user_input[CONF_SCAN_COUNT_ENTITY]
+            )
             if error:
                 errors["base"] = error
             else:
