@@ -17,6 +17,8 @@ The package also defines a `rest_command` for Open Food Facts. No API key is nee
 
 ## Required ESPHome setup
 
+For a single ESP32 handling both devices, flash [`esphome/cosori-barcode-integrated.yaml`](../esphome/cosori-barcode-integrated.yaml). It keeps the node name `barcode-scanner`, so the action name below remains unchanged. Do not flash the standalone Cosori and scanner configurations to the same board as separate devices; one ESP32 runs one firmware at a time.
+
 The package expects:
 - Barcode scanner event: `esphome.barcode_scanned`, with `barcode`.
 - Stable scale entity: `sensor.cosori_weight_stable`.
