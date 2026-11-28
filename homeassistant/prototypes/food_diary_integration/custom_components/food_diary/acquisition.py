@@ -156,3 +156,15 @@ def parse_openfoodfacts_product(
         "nutrients_per_100g": nutrients,
         "source": "openfoodfacts",
     }
+
+
+def classify_counter_change(previous: int | None, current: int | None) -> tuple[str, int]:
+    """Classify a scan-counter update without treating startup/reset as scans."""
+    if current is None:
+        return "invalid", 0
+    if previous is None:
+        return "baseline", 0
+    if current < previous:
+        return "reset", 0
+    increment = current - previous
+    return ("increment", increment) if increment else ("unchanged", 0)
