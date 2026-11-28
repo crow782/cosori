@@ -112,7 +112,26 @@ Prima di decidere le card, verificare un prototipo per selezione/ricerca dinamic
 - Il package homeassistant/packages/food_diary.yaml attuale resta intatto durante lo sviluppo.
 - La migrazione dal contatore kcal esistente va fatta solo dopo test e con possibilità di tornare indietro.
 
-## 9. Prototipo tecnico e criteri di accettazione
+## 9. Prototipo tecnico – stato aggiornato
+
+Il prototipo SQLite indipendente si trova in `homeassistant/prototypes/food_diary_sqlite/`. Il livello dati non importa moduli Home Assistant e non è installabile come integrazione.
+
+Funzioni attualmente presenti:
+- catalogo alimenti con barcode univoco, ricerca alfabetica, inserimento, modifica e cancellazione;
+- registrazione e cancellazione delle porzioni;
+- snapshot dei dati nutrizionali e del nome prodotto al momento del consumo;
+- aggiornamento parziale dei nutrienti senza cancellare i campi non specificati; passare esplicitamente `None` per cancellare un singolo valore;
+- riepilogo `period_summary(period, anchor_date, timezone_name)` per giorno, settimana e mese;
+- raggruppamento locale per data e pasto, settimana lunedì–domenica;
+- somme dei nutrienti noti, mantenendo `None` se tutti i valori del gruppo sono sconosciuti.
+
+Per i riepiloghi, i confini giorno/settimana/mese vengono calcolati nel fuso IANA indicato (ad esempio `Europe/Rome`) e convertiti in UTC per la query. I record vengono poi raggruppati nuovamente per data locale. Questo è necessario per gestire correttamente mezzanotte e cambi dell'ora legale.
+
+Il registro completo dello sviluppo, il contratto dei metodi, i comandi di test e le verifiche ancora da fare sono in `homeassistant/prototypes/food_diary_sqlite/DEVELOPMENT_LOG.md`.
+
+**Stato di verifica:** i test automatici sono stati aggiornati per coprire modifiche parziali e aggregazioni, incluso il cambio all'ora legale. Non sono ancora stati eseguiti. Il prototipo non deve essere considerato collaudato.
+
+## 10. Criteri di accettazione
 
 Prima di costruire tutta la dashboard:
 1. implementare lo scheletro dell'integrazione e lo schema SQLite;
@@ -125,7 +144,7 @@ Prima di costruire tutta la dashboard:
 
 Solo dopo questi test si definiscono le entità definitive e si realizza la dashboard Lovelace.
 
-## 10. Questioni ancora aperte
+## 11. Questioni ancora aperte
 
 - La registrazione da scansione sarà automatica o richiederà conferma? Proposta: automatica solo quando prodotto e nutrienti sono riconosciuti; altrimenti resta in sospeso per intervento.
 - Il pasto sarà suggerito in base all'ora e modificabile? Proposta: sì.
