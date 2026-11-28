@@ -66,7 +66,30 @@ api:
   on_client_connected:
     - script.stop: standby_timer
     - script.execute: show_ready
-  on_client_disconnected: [] # Scanning works without HA — no visible change needed
+  on_client_disconnected: []
+  # Home Assistant calls this action after the Open Food Facts lookup.
+  actions:
+    - action: show_food_result
+      variables:
+        product_name: string
+        status_text: string
+        weight_g: float
+        kcal: float
+        total_kcal: float
+        has_kcal: bool
+        found: bool
+      then:
+        - lambda: |-
+            id(display_product_name).publish_state(product_name);
+            id(display_status_text).publish_state(status_text);
+            id(display_weight_g) = weight_g;
+            id(display_kcal) = kcal;
+            id(display_total_kcal) = total_kcal;
+            id(display_has_kcal) = has_kcal;
+            id(last_result).publish_state(product_name);
+            id(screen_mode).publish_state("nutrition");
+            id(oled).turn_on();
+        - script.execute: standby_timer
 
 ota:
   - platform: esphome
@@ -80,16 +103,6 @@ wifi:
 
 
 captive_portal:
-
-# HTTP request component for POSTing to the middleware
-# WDT raised to 15s via sdkconfig — ESP timeout must stay below that.
-http_request:
-  useragent: "ESPHome/BarcodeScanner"
-  timeout: 14s
-  verify_ssl: false
-
-# JSON parsing support (for reading response body)
-json:
 
 #######################################################################################################
 # CONFIG THE DEVICE
@@ -132,25 +145,13 @@ text_sensor:
     id: last_barcode
 
   - platform: template
-    name: "Last Result Type"
-    id: last_result_type
-
-  - platform: template
-    name: "Last Brand"
-    id: last_brand
-
-  - platform: template
-    name: "Last Quantity"
-    id: last_quantity
-
-  - platform: template
-    name: "Pending Action URL"
-    id: pending_action_url
+    name: "Display Product Name"
+    id: display_product_name
     internal: true
 
   - platform: template
-    name: "Last Paused"
-    id: last_paused
+    name: "Display Status Text"
+    id: display_status_text
     internal: true
 
   - platform: template
@@ -159,7 +160,6 @@ text_sensor:
     internal: true
     on_value:
       then:
-        # Cancel any running display scripts so the scan owns the screen
         - script.stop: standby_timer
         - script.stop: show_ready
         - script.stop: wake_display_result
@@ -168,97 +168,24 @@ text_sensor:
             id(scan_count_val) += 1;
             id(scan_count).publish_state(id(scan_count_val));
             id(oled).turn_on();
+            id(display_product_name).publish_state("");
+            id(display_status_text).publish_state("In attesa Home Assistant");
+            id(display_weight_g) = 0.0f;
+            id(display_kcal) = 0.0f;
+            id(display_has_kcal) = false;
         - text_sensor.template.publish:
             id: last_barcode
             state: !lambda "return x;"
         - text_sensor.template.publish:
             id: screen_mode
             state: "scanning"
-        # Give scanner LED/laser current peak time to settle before WiFi TX
+        # Send the barcode to Home Assistant without waiting for any HTTP request.
         - delay: 300ms
-        - http_request.post:
-            url: http://localhost
-            request_headers:
-              Content-Type: "application/json"
-              Authorization: sssss
-            body: !lambda |-
-              std::string escaped;
-              escaped.reserve(x.size());
-              for (char c : x) {
-                if (c == '"' || c == '\\') escaped += '\\';
-                escaped += c;
-              }
-              return "{\"barcode\":\"" + escaped + "\"}";
-            capture_response: true
-            max_response_buffer_size: 1024
-            on_response:
-              then:
-                - if:
-                    condition:
-                      lambda: return response->status_code == 200;
-                    then:
-                      - lambda: |-
-                          ESP_LOGI("scan", "HTTP 200 — body length: %d", (int)body.length());
-                          ESP_LOGI("scan", "Body: %s", body.c_str());
-                          bool ok = json::parse_json(body, [](JsonObject root) -> bool {
-                            // Display name
-                            const char* item_raw = root["item"] | (const char*)nullptr;
-                            const char* result_raw = root["result"] | "unknown";
-                            std::string item_name = item_raw ? item_raw : "";
-                            std::string result = result_raw ? result_raw : "unknown";
-
-                            if (item_name.empty()) item_name = id(last_barcode).state;
-                            id(last_result).publish_state(item_name);
-                            id(last_result_type).publish_state(result);
-
-                            // Display enrichment (brand/quantity for OLED)
-                            const char* brand_raw = root["brand"] | (const char*)nullptr;
-                            const char* qty_raw = root["quantity"] | (const char*)nullptr;
-                            id(last_brand).publish_state(brand_raw ? brand_raw : "");
-                            id(last_quantity).publish_state(qty_raw ? qty_raw : "");
-
-                            // Notification relay — store action_url for HA event
-                            bool needs_action = root["needs_action"] | false;
-                            const char* action_raw = root["action_url"] | (const char*)nullptr;
-                            std::string action_url = action_raw ? action_raw : "";
-                            id(pending_action_url).publish_state(needs_action ? action_url : "");
-
-                            // Pause state
-                            bool paused = root["paused"] | false;
-                            id(last_paused).publish_state(paused ? "1" : "0");
-
-                            return true;
-                          });
-                          if (!ok) {
-                            ESP_LOGW("scan", "Failed to parse response body");
-                            id(last_result).publish_state(id(last_barcode).state);
-                            id(last_result_type).publish_state("error");
-                          }
-                          id(screen_mode).publish_state("result");
-                    else:
-                      - lambda: |-
-                          ESP_LOGW("scan", "Middleware returned HTTP %d", response->status_code);
-                          id(last_result).publish_state("Server error");
-                          id(last_result_type).publish_state("error");
-                          id(screen_mode).publish_state("result");
-                - script.execute: standby_timer
-                # Fire HA event on every scan — HA automations filter on needs_action
-                - homeassistant.event:
-                    event: esphome.barcode_scanned
-                    data:
-                      barcode: !lambda "return id(last_barcode).state;"
-                      item: !lambda "return id(last_result).state;"
-                      result_type: !lambda "return id(last_result_type).state;"
-                      needs_action: !lambda 'return id(pending_action_url).state.empty() ? "false" : "true";'
-                      action_url: !lambda "return id(pending_action_url).state;"
-            on_error:
-              then:
-                - lambda: |-
-                    ESP_LOGW("scan", "HTTP request failed (timeout or connection error)");
-                    id(last_result).publish_state("No response");
-                    id(last_result_type).publish_state("timeout");
-                    id(screen_mode).publish_state("result");
-                - script.execute: standby_timer
+        - homeassistant.event:
+            event: esphome.barcode_scanned
+            data:
+              barcode: !lambda "return id(last_barcode).state;"
+        - script.execute: standby_timer
 
 # Timer to return to standby after showing result (uses configurable timeout)
 # NOTE: Sensor states are NOT cleared — kept so button press can recall last result.
@@ -302,7 +229,7 @@ script:
                 else:
                   - text_sensor.template.publish:
                       id: screen_mode
-                      state: "result"
+                      state: "nutrition"
                   - script.execute: standby_timer
 
   - id: wake_display_status
@@ -353,6 +280,26 @@ globals:
     initial_value: "0"
 
   - id: long_press_fired
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  - id: display_weight_g
+    type: float
+    restore_value: false
+    initial_value: "0"
+
+  - id: display_kcal
+    type: float
+    restore_value: false
+    initial_value: "0"
+
+  - id: display_total_kcal
+    type: float
+    restore_value: false
+    initial_value: "0"
+
+  - id: display_has_kcal
     type: bool
     restore_value: false
     initial_value: "false"
@@ -443,54 +390,25 @@ display:
 
       if (mode == "scanning") {
         it.fill(COLOR_OFF);
-        it.printf(64, 16, id(font_heading), TextAlign::TOP_CENTER, "Looking up...");
-        it.printf(64, 36, id(font_body), TextAlign::TOP_CENTER, "%s", trunc(id(last_barcode).state, 21).c_str());
+        it.printf(64, 12, id(font_heading), TextAlign::TOP_CENTER, "Barcode ricevuto");
+        it.printf(64, 31, id(font_body), TextAlign::TOP_CENTER, "%s", trunc(id(last_barcode).state, 21).c_str());
+        it.printf(64, 48, id(font_body), TextAlign::TOP_CENTER, "Attesa Home Assistant");
         return;
       }
 
-      if (mode == "result") {
+      if (mode == "nutrition") {
         it.fill(COLOR_OFF);
-        // Result type header with icon
-        auto rtype = id(last_result_type).state;
-        bool is_paused = (id(last_paused).state == "1");
-        if (rtype == "added" || rtype == "added_as_note") {
-          it.printf(0, 0, id(font_icons), "\U000F05E0");  // check-circle
-          it.printf(22, 2, id(font_heading), is_paused ? "Linked" : "Added");
-        } else if (rtype == "queued") {
-          it.printf(0, 0, id(font_icons), "\U000F0026");  // alert
-          it.printf(22, 2, id(font_heading), "Queued");
-        } else if (rtype == "unknown" || rtype == "needs_mapping") {
-          it.printf(0, 0, id(font_icons), "\U000F0026");  // alert
-          if (rtype == "needs_mapping") {
-            it.printf(22, 2, id(font_heading), "Not Linked");
-          } else {
-            it.printf(22, 2, id(font_heading), is_paused ? "Unknown" : "Needs Mapping");
-          }
-        } else if (rtype == "timeout") {
-          it.printf(0, 0, id(font_icons), "\U000F0026");  // alert
-          it.printf(22, 2, id(font_heading), "Timed Out");
+        const char *heading = id(display_status_text).state.c_str();
+        it.printf(0, 0, id(font_heading), "%s", trunc(heading, 17).c_str());
+        it.printf(0, 17, id(font_body), "%s", trunc(id(display_product_name).state, 21).c_str());
+        it.printf(0, 30, id(font_body), "Peso: %.0f g", id(display_weight_g));
+        if (id(display_has_kcal)) {
+          it.printf(0, 42, id(font_body), "Porzione: %.0f kcal", id(display_kcal));
         } else {
-          it.printf(0, 0, id(font_icons), "\U000F0159");  // close-circle
-          it.printf(22, 2, id(font_heading), "Error");
+          it.printf(0, 42, id(font_body), "Porzione: kcal n/d");
         }
-
-        // Item name
-        it.printf(0, 22, id(font_body), "%s", trunc(id(last_result).state, 21).c_str());
-
-        // Brand / quantity line
-        auto brand = id(last_brand).state;
-        auto qty = id(last_quantity).state;
-        std::string detail;
-        if (!brand.empty() && !qty.empty()) detail = brand + " " + qty;
-        else if (!brand.empty()) detail = brand;
-        else if (!qty.empty()) detail = qty;
-        if (!detail.empty()) {
-          it.printf(0, 34, id(font_body), "%s", trunc(detail, 21).c_str());
-        }
-
-        // Separator + barcode at bottom
-        it.line(0, 48, 128, 48);
-        it.printf(0, 52, id(font_body), "%s", trunc(id(last_barcode).state, 21).c_str());
+        it.line(0, 54, 128, 54);
+        it.printf(0, 56, id(font_body), "Totale: %.0f kcal", id(display_total_kcal));
         return;
       }
 
