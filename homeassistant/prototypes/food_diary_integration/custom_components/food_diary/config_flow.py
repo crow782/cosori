@@ -94,7 +94,7 @@ async def _validate_device_selection(
     entity = entity_registry.async_get(weight_entity)
     if (
         entity is None
-        or entity.domain != "sensor"
+        or not entity.entity_id.startswith("sensor.")
         or entity.platform != "esphome"
     ):
         return "invalid_weight_entity"
@@ -154,15 +154,11 @@ class FoodDiaryConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
         """Return the options flow."""
-        return FoodDiaryOptionsFlow(config_entry)
+        return FoodDiaryOptionsFlow()
 
 
 class FoodDiaryOptionsFlow(OptionsFlow):
     """Allow changing devices and acquisition preferences after setup."""
-
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        """Store the config entry being configured."""
-        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
