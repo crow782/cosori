@@ -107,7 +107,7 @@ The firmware validates the observed packet header and minimum length before deco
 
 ## Barcode scanner and food diary
 
-The optional GM67 barcode scanner firmware is in [barcode scanner.yaml](barcode%20scanner.yaml). It sends `esphome.barcode_scanned` directly through the ESPHome API; no HTTP middleware is required.
+The optional GM67 barcode scanner firmware is in [barcode scanner.yaml](barcode%20scanner.yaml). **Current implementation note:** the scanner configuration still contains an HTTP request to `http://localhost` before it emits `esphome.barcode_scanned`; this is not the intended final architecture and `localhost` on the ESP32 does not refer to Home Assistant. The integration plan documents the recommended change: emit the barcode event immediately over the ESPHome API and let Home Assistant handle Open Food Facts HTTP requests.
 
 The first Home Assistant bridge is in [homeassistant/README.md](homeassistant/README.md), with the package at [homeassistant/packages/food_diary.yaml](homeassistant/packages/food_diary.yaml). The intended workflow is: tare the empty plate, scan the product, add the food, then pair the barcode with the next positive stable scale reading.
 
