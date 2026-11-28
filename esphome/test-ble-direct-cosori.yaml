@@ -50,12 +50,51 @@ esp32_ble_tracker:
             }
 
             const std::string name = x.get_name();
+            char address_buf[ESPBTDevice::MAC_ADDRESS_PRETTY_BUFFER_SIZE];
+            x.address_str_to(address_buf);
+
+            // The tracker exposes the original ESP-IDF scan result during this
+            // callback. ble_adv contains ADV bytes followed by SCAN_RSP bytes.
+            // Dump both regions before the parsed-data summary below.
+            const auto &raw = x.get_scan_result();
+
             ESP_LOGI("cosori_ble_test",
-                     "========== COSORI TARGET ==========");
+                     "========== COSORI RAW BLE REPORT ==========");
             ESP_LOGI("cosori_ble_test",
                      "MAC=%s address_type=%s RSSI=%d dBm name='%s'",
-                     address.c_str(), x.address_type_str(), x.get_rssi(),
+                     address_buf, x.address_type_str(), x.get_rssi(),
                      name.c_str());
+            ESP_LOGI("cosori_ble_test",
+                     "RAW_LENGTHS adv_data_len=%u scan_rsp_len=%u total=%u",
+                     (unsigned) raw.adv_data_len,
+                     (unsigned) raw.scan_rsp_len,
+                     (unsigned) raw.adv_data_len + raw.scan_rsp_len);
+
+            char raw_hex[128];
+            size_t raw_pos = 0;
+            raw_hex[0] = '\\0';
+            for (size_t i = 0; i < raw.adv_data_len &&
+                               raw_pos < sizeof(raw_hex) - 4; i++) {
+              raw_pos += snprintf(raw_hex + raw_pos,
+                                  sizeof(raw_hex) - raw_pos,
+                                  "%02X%s", raw.ble_adv[i],
+                                  (i + 1 < raw.adv_data_len) ? " " : "");
+            }
+            ESP_LOGI("cosori_ble_test", "RAW_ADV[%u]=[%s]",
+                     (unsigned) raw.adv_data_len, raw_hex);
+
+            raw_pos = 0;
+            raw_hex[0] = '\\0';
+            for (size_t i = 0; i < raw.scan_rsp_len &&
+                               raw_pos < sizeof(raw_hex) - 4; i++) {
+              raw_pos += snprintf(raw_hex + raw_pos,
+                                  sizeof(raw_hex) - raw_pos,
+                                  "%02X%s",
+                                  raw.ble_adv[raw.adv_data_len + i],
+                                  (i + 1 < raw.scan_rsp_len) ? " " : "");
+            }
+            ESP_LOGI("cosori_ble_test", "RAW_SCAN_RSP[%u]=[%s]",
+                     (unsigned) raw.scan_rsp_len, raw_hex);
 
             for (auto uuid : x.get_service_uuids()) {
               char uuid_str[37];
@@ -117,7 +156,10 @@ esp32_ble_tracker:
 # 3. Repeat with approximately 100 g, 500 g and 1000 g.
 # 4. Compare SERVICE_DATA / MANUFACTURER lines between readings.
 #
-# Important: this reports parsed advertising structures, not GATT
-# notifications. The ESPHome tracker may combine advertising and scan
-# response fields. The weight notification on GATT 0x1910/0x2C12 is not
-# visible to this passive scanner.
+# Important:
+# - RAW_ADV is the raw advertising payload reported by ESP-IDF.
+# - RAW_SCAN_RSP is the separately reported scan-response payload.
+# - These are passive scan reports; no GATT connection is made.
+# - The GATT weight notification on 0x1910/0x2C12 is not visible here.
+# - Compare both raw lines across known weights; parsed fields below are
+#   retained only as a convenient cross-check.
