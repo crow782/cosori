@@ -137,8 +137,10 @@ class FoodDiaryAuroraCard extends HTMLElement {
     return this._dateLabel(summary.start_date) + " – " + this._dateLabel(last.toISOString().slice(0, 10));
   }
 
-  _macro(label, value) {
-    return '<div class="macro"><span>' + label + '</span><strong>' + this._number(value, 1) + ' g</strong></div>';
+  _macro(label, value, coverage) {
+    const partial = coverage?.known_entries > 0 && coverage?.missing_entries > 0;
+    return '<div class="macro"><span>' + label + (partial ? ' · parziale' : '') +
+      '</span><strong>' + this._number(value, 1) + ' g</strong></div>';
   }
 
   _entry(entry, showDate) {
@@ -233,9 +235,13 @@ class FoodDiaryAuroraCard extends HTMLElement {
       '<article class="metric"><span>Media giornaliera</span><strong>' +
       this._number(summary?.average_daily_energy_kcal) + '<small> kcal</small></strong>' +
       '<em>Solo giorni con energia disponibile</em></article></div>' +
-      '<div class="macros">' + this._macro("Proteine",totals.protein_g) +
-      this._macro("Carboidrati",totals.carbohydrates_g) + this._macro("Grassi",totals.fat_g) +
-      this._macro("Fibre",totals.fiber_g) + '</div>' +
+      '<div class="macros">' + this._macro("Proteine",totals.protein_g,coverage.protein_g) +
+      this._macro("Carboidrati",totals.carbohydrates_g,coverage.carbohydrates_g) +
+      this._macro("Grassi",totals.fat_g,coverage.fat_g) +
+      this._macro("Saturi",totals.saturated_fat_g,coverage.saturated_fat_g) +
+      this._macro("Zuccheri",totals.sugars_g,coverage.sugars_g) +
+      this._macro("Fibre",totals.fiber_g,coverage.fiber_g) +
+      this._macro("Sale",totals.salt_g,coverage.salt_g) + '</div>' +
       '<section class="panel"><div class="section-head"><div><h2>Andamento</h2>' +
       '<p>I giorni senza registrazioni sono indicati come N/D</p></div></div>' + this._chart(summary) + '</section>' +
       '<section class="panel"><div class="section-head"><div><h2>' +
