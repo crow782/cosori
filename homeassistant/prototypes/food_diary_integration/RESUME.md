@@ -89,9 +89,13 @@ Presenti:
 - `const.py`
 - `config_flow.py`
 - `__init__.py`
+- `coordinator.py`
+- `acquisition.py`
+- `sensor.py`
 - `services.py`
 - `services.yaml`
 - `storage.py`
+- `test_acquisition.py`
 - `translations/en.json`
 - `translations/it.json`
 
@@ -103,22 +107,23 @@ Config flow:
 - options flow per le tre entità, pasto default, autosave, timeout, soglia zero e Open Food Facts paese/lingua/abilitazione;
 - una sola config entry.
 
-Runtime:
+Runtime presente come prototipo, da validare:
 - inizializza SQLite nel percorso futuro `<config>/food_diary/food_diary.db`;
-- registra le azioni CRUD e riepilogo al setup del config entry;
-- operazioni SQLite eseguite nell'executor;
-- rimuove le azioni al unload e ricarica l'integrazione al cambio opzioni.
-
-Presenti come prototipo, da validare:
-- coordinator con listener del contatore e dell'entità peso;
-- evento esphome.barcode_scanned come payload della singola lettura, gated dal contatore selezionato;
-- fallback entity-based per scanner generici senza evento ESPHome;
+- registra azioni CRUD, riepilogo e controllo sessione pendente;
+- esegue le operazioni SQLite nell'executor;
+- coordinator con listener del contatore e del sensore peso selezionati;
+- evento `esphome.barcode_scanned` gated dal contatore, più fallback entity-based per scanner generici;
 - correlazione barcode/peso con baseline zero, timeout, sessione singola e protezione dai salvataggi doppi;
 - lookup Open Food Facts v2 con sessione aiohttp condivisa di Home Assistant;
 - sessione prodotto sconosciuto risolvibile aggiungendo alimento con lo stesso barcode;
-- azioni per salvare/annullare la sessione pendente e sensori diagnostici;
+- azioni `save_pending`, `discard_pending`, `get_status`;
+- sensori diagnostici per stato, ultimo barcode, ultimo peso stabile e scan count;
 - test unitari puri per parsing barcode/peso, soglia zero e parsing nutrienti.
-- pannello Aurora connesso al backend.
+
+Non ancora presenti:
+- pannello Aurora connesso al backend;
+- test di integrazione Home Assistant/config flow/servizi;
+- persistenza delle sessioni pendenti attraverso riavvii.
 
 ### Storage SQLite
 
@@ -189,10 +194,10 @@ python -m py_compile storage.py tests/test_storage.py
 ## 7. Prossimi lavori, nell'ordine
 
 1. **Verifica statica del config flow** rispetto alle API pubbliche di Core 2026.11.3: selector, entity registry, OptionsFlow, setup/unload e traduzioni.
-2. **Coordinator**: listener del contatore scansioni selezionato e lettura dell'entità barcode, state_changed/state_reported, normalizzazione e validazione barcode, gestione letture identiche, entità unavailable e cambi opzioni.
+2. **Coordinator**: prototipo implementato; testare eventi ESPHome, fallback entity-only, counter reset, scansioni ravvicinate, scanner non ESPHome, errori/unavailable e unload.
 3. **State machine peso**: zero stabile prima della scansione, barcode pendente, peso positivo stabile, conversione unità g/kg, timeout, peso negativo/non valido, sessione concorrente, annullamento e ripristino dopo errore.
 4. **Lookup**: prototipo Open Food Facts v2 implementato; aggiungere test HTTP mock e verificare parametri paese/lingua, status 404, timeout e rate-limit.
-5. **Persistenza e servizi**: integrazione coordinator-storage, selezione pasto, autosave e gestione prodotto sconosciuto.
+5. **Persistenza e servizi**: collegamento coordinator-storage presente; aggiungere test servizi, gestione errori DB e persistenza delle sessioni pendenti.
 6. **Test automatici**: unit test coordinator/state machine con fake hass e state/event bus; test config flow; test servizi e migrazioni.
 7. **Diagnostica**: sensori base implementati; verificare naming, unique_id e stati in HA.
 8. **Frontend**: collegare il mockup Aurora alle azioni e al flusso reale; valutare API pannello pubbliche e mantenere fallback Lovelace.
