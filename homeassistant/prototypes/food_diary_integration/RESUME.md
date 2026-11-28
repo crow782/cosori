@@ -187,7 +187,7 @@ python -m py_compile storage.py tests/test_storage.py
 ## 7. Prossimi lavori, nell'ordine
 
 1. **Verifica statica del config flow** rispetto alle API pubbliche di Core 2026.11.3: selector, entity registry, OptionsFlow, setup/unload e traduzioni.
-2. **Coordinator**: listener dell'entità barcode selezionata, state_changed/state_reported, normalizzazione e validazione barcode, gestione letture identiche, entità unavailable e cambi opzioni.
+2. **Coordinator**: listener del contatore scansioni selezionato e lettura dell'entità barcode, state_changed/state_reported, normalizzazione e validazione barcode, gestione letture identiche, entità unavailable e cambi opzioni.
 3. **State machine peso**: zero stabile prima della scansione, barcode pendente, peso positivo stabile, conversione unità g/kg, timeout, peso negativo/non valido, sessione concorrente, annullamento e ripristino dopo errore.
 4. **Lookup**: catalogo locale prima; Open Food Facts via client HTTP nativo HA/aiohttp, timeout, error handling, paese/lingua; non bloccare la pesata quando il barcode è sconosciuto.
 5. **Persistenza e servizi**: integrazione coordinator-storage, selezione pasto, autosave e gestione prodotto sconosciuto.
