@@ -1,0 +1,119 @@
+# Cosori CNS-R101S - passive BLE advertising test
+# Hardware: classic ESP32 DevKit (30-pin), ESPHome board esp32dev.
+# This firmware DOES NOT connect to the scale and has no ble_client.
+# It logs only advertisements received from the verified test-unit MAC.
+
+substitutions:
+  scale_mac: "C0:60:40:03:9F:6D"
+
+esphome:
+  name: test-ble-direct-cosori
+  friendly_name: Test BLE Direct Cosori
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  logs:
+    esp32_ble_tracker: WARN
+    esp32_ble: WARN
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: none
+  ap:
+    ssid: "Cosori-BLE-Test-Recovery"
+    password: !secret fallback_ap_password
+
+captive_portal:
+
+esp32_ble_tracker:
+  scan_parameters:
+    active: true
+    interval: 1100ms
+    window: 1100ms
+  on_ble_advertise:
+    - then:
+        - lambda: |-
+            const std::string address = x.address_str();
+            if (address != std::string("${scale_mac}")) {
+              return;
+            }
+
+            const std::string name = x.get_name();
+            ESP_LOGI("cosori_ble_test",
+                     "========== COSORI TARGET ==========");
+            ESP_LOGI("cosori_ble_test",
+                     "MAC=%s address_type=%s RSSI=%d dBm name='%s'",
+                     address.c_str(), x.address_type_str(), x.get_rssi(),
+                     name.c_str());
+
+            for (auto uuid : x.get_service_uuids()) {
+              ESP_LOGI("cosori_ble_test", "Advertised service UUID: %s",
+                       uuid.to_string().c_str());
+            }
+
+            // Manufacturer-specific advertising data.
+            for (const auto &item : x.get_manufacturer_datas()) {
+              char hex[256];
+              size_t pos = 0;
+              hex[0] = '\0';
+              for (size_t i = 0; i < item.data.size() && pos < sizeof(hex) - 4; i++) {
+                pos += snprintf(hex + pos, sizeof(hex) - pos, "%02X%s",
+                                item.data[i],
+                                (i + 1 < item.data.size()) ? " " : "");
+              }
+              ESP_LOGI("cosori_ble_test",
+                       "MANUFACTURER uuid/company=%s len=%u data=[%s]",
+                       item.uuid.to_string().c_str(),
+                       (unsigned)item.data.size(), hex);
+            }
+
+            // Service Data (16/32/128-bit UUID advertising structures).
+            for (const auto &item : x.get_service_datas()) {
+              char hex[256];
+              size_t pos = 0;
+              hex[0] = '\0';
+              for (size_t i = 0; i < item.data.size() && pos < sizeof(hex) - 4; i++) {
+                pos += snprintf(hex + pos, sizeof(hex) - pos, "%02X%s",
+                                item.data[i],
+                                (i + 1 < item.data.size()) ? " " : "");
+              }
+              ESP_LOGI("cosori_ble_test",
+                       "SERVICE_DATA uuid=%s len=%u data=[%s]",
+                       item.uuid.to_string().c_str(),
+                       (unsigned)item.data.size(), hex);
+            }
+
+            for (int8_t tx_power : x.get_tx_powers()) {
+              ESP_LOGI("cosori_ble_test", "TX_POWER=%d dBm", tx_power);
+            }
+
+            if (x.get_manufacturer_datas().empty() &&
+                x.get_service_datas().empty()) {
+              ESP_LOGW("cosori_ble_test",
+                       "Target MAC seen, but no manufacturer/service data in this report.");
+            }
+
+            ESP_LOGI("cosori_ble_test",
+                     "========== END COSORI REPORT ==========");
+
+# Test procedure:
+# 1. Flash this firmware and open ESPHome logs.
+# 2. Power on the scale and record its empty-scale advertisements.
+# 3. Repeat with approximately 100 g, 500 g and 1000 g.
+# 4. Compare SERVICE_DATA / MANUFACTURER lines between readings.
+#
+# Important: this reports parsed advertising structures, not GATT
+# notifications. The ESPHome tracker may combine advertising and scan
+# response fields. The weight notification on GATT 0x1910/0x2C12 is not
+# visible to this passive scanner.
