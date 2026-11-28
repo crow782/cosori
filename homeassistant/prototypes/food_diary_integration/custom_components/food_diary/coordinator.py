@@ -131,6 +131,9 @@ class FoodDiaryCoordinator:
         if self._timeout_cancel:
             self._timeout_cancel()
             self._timeout_cancel = None
+        async with self._save_lock:
+            self._session = None
+            self._pending_counter_events = 0
         self._listeners.clear()
 
     @staticmethod
