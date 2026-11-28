@@ -1,0 +1,185 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Collega i dispositivi",
+        "description": "Seleziona il sensore di peso ESPHome e il dispositivo ESPHome che invia le scansioni barcode."
+      }
+    },
+    "abort": {
+      "already_configured": "Food Diary è già configurato."
+    },
+    "error": {
+      "invalid_weight_entity": "Seleziona un sensore di peso registrato tramite ESPHome.",
+      "invalid_scanner_device": "Seleziona un dispositivo fornito dall'integrazione ESPHome."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Impostazioni Food Diary",
+        "description": "Scegli i dispositivi collegati e configura il flusso di pesata e la ricerca dei prodotti."
+      }
+    }
+  },
+  "services": {
+    "add_food": {
+      "name": "Aggiungi alimento",
+      "description": "Aggiunge un alimento al catalogo locale.",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "Nome dell'alimento o prodotto."
+        },
+        "brand": {
+          "name": "Marca",
+          "description": "Marca facoltativa."
+        },
+        "barcode": {
+          "name": "Codice a barre",
+          "description": "Barcode univoco facoltativo."
+        },
+        "source": {
+          "name": "Fonte",
+          "description": "Origine dei dati del prodotto."
+        },
+        "nutrients_per_100g": {
+          "name": "Nutrienti per 100 g",
+          "description": "Valori nutrizionali conosciuti; ometti quelli sconosciuti."
+        }
+      }
+    },
+    "update_food": {
+      "name": "Modifica alimento",
+      "description": "Modifica una voce del catalogo. I nutrienti omessi vengono mantenuti.",
+      "fields": {
+        "food_id": {
+          "name": "ID alimento",
+          "description": "ID restituito da un'azione Food Diary."
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Nuovo nome del prodotto."
+        },
+        "brand": {
+          "name": "Marca",
+          "description": "Nuova marca; un valore vuoto la cancella."
+        },
+        "barcode": {
+          "name": "Barcode",
+          "description": "Nuovo barcode; un valore vuoto lo cancella."
+        },
+        "nutrients_per_100g": {
+          "name": "Nutrienti per 100 g",
+          "description": "Vengono modificati solo i nutrienti specificati; null cancella un valore."
+        },
+        "source": {
+          "name": "Fonte",
+          "description": "Origine dei dati del prodotto."
+        }
+      }
+    },
+    "delete_food": {
+      "name": "Elimina alimento",
+      "description": "Elimina un alimento dal catalogo. Le registrazioni esistenti conservano i propri dati.",
+      "fields": {
+        "food_id": {
+          "name": "ID alimento",
+          "description": "ID della voce del catalogo."
+        }
+      }
+    },
+    "search_foods": {
+      "name": "Cerca alimenti",
+      "description": "Cerca nel catalogo locale per nome o marca.",
+      "fields": {
+        "query": {
+          "name": "Testo di ricerca",
+          "description": "Testo da cercare nel nome o nella marca."
+        },
+        "limit": {
+          "name": "Risultati massimi",
+          "description": "Numero massimo di risultati, da 1 a 500."
+        }
+      }
+    },
+    "find_food_by_barcode": {
+      "name": "Trova per barcode",
+      "description": "Cerca un prodotto nel catalogo tramite barcode esatto.",
+      "fields": {
+        "barcode": {
+          "name": "Barcode",
+          "description": "Codice a barre esatto."
+        }
+      }
+    },
+    "add_entry": {
+      "name": "Aggiungi registrazione",
+      "description": "Salva una porzione pesata nel diario.",
+      "fields": {
+        "food_id": {
+          "name": "ID alimento",
+          "description": "ID della voce del catalogo."
+        },
+        "weight_g": {
+          "name": "Peso",
+          "description": "Peso della porzione consumata in grammi."
+        },
+        "meal_type": {
+          "name": "Pasto",
+          "description": "Categoria del pasto."
+        },
+        "consumed_at": {
+          "name": "Data e ora",
+          "description": "Timestamp ISO 8601 facoltativo con offset UTC."
+        },
+        "source": {
+          "name": "Origine registrazione",
+          "description": "Modalità di inserimento della porzione."
+        }
+      }
+    },
+    "list_entries": {
+      "name": "Elenca registrazioni",
+      "description": "Restituisce le registrazioni in un intervallo ISO 8601.",
+      "fields": {
+        "start": {
+          "name": "Inizio",
+          "description": "Timestamp iniziale incluso, con offset UTC."
+        },
+        "end": {
+          "name": "Fine",
+          "description": "Timestamp finale escluso, con offset UTC."
+        }
+      }
+    },
+    "delete_entry": {
+      "name": "Elimina registrazione",
+      "description": "Elimina una porzione dal diario tramite ID.",
+      "fields": {
+        "entry_id": {
+          "name": "ID registrazione",
+          "description": "ID della registrazione."
+        }
+      }
+    },
+    "period_summary": {
+      "name": "Riepilogo periodo",
+      "description": "Restituisce i totali giornalieri, settimanali o mensili nel fuso IANA selezionato.",
+      "fields": {
+        "period": {
+          "name": "Periodo",
+          "description": "Giorno, settimana lunedì-domenica o mese di calendario."
+        },
+        "anchor_date": {
+          "name": "Data di riferimento",
+          "description": "Data che seleziona il giorno, la settimana o il mese."
+        },
+        "timezone": {
+          "name": "Fuso orario",
+          "description": "Fuso IANA, ad esempio Europe/Rome."
+        }
+      }
+    }
+  }
+}
