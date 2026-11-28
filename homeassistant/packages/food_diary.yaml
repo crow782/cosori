@@ -390,7 +390,7 @@ automation:
           - action: esphome.barcode_scanner_show_food_result
             continue_on_error: true
             data:
-              product_name: "{{ lookup_message | trim }}"
+              product_name: "{{ barcode }}"
               status_text: "{{ lookup_message | trim }}"
               weight_g: "{{ weight_g | float(0) }}"
               kcal: 0
@@ -414,7 +414,7 @@ automation:
       - action: esphome.barcode_scanner_show_food_result
         continue_on_error: true
         data:
-          product_name: "Totale azzerato"
+          product_name: "Contatore calorie"
           status_text: "Totale azzerato"
           weight_g: 0
           kcal: 0
