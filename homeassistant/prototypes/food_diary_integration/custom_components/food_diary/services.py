@@ -50,9 +50,10 @@ def async_setup_services(hass: HomeAssistant) -> None:
             nutrients_per_100g=call.data.get("nutrients_per_100g"),
             source=call.data.get("source", "manual"),
         )
-        return food if call.return_response else None
-
-    async def update_food(call: ServiceCall):
+        coordinator = hass.data.get(DOMAIN, {}).get("coordinator")
+        if coordinator is not None and food.get("barcode"):
+            await coordinator.async_catalog_changed(food["barcode"])
+        return food if call.return_response else None(call: ServiceCall):
         store = _store(hass)
         changes = {
             key: call.data[key]
@@ -60,6 +61,9 @@ def async_setup_services(hass: HomeAssistant) -> None:
             if key in call.data
         }
         food = await _run(hass, store.update_food, call.data["food_id"], **changes)
+        coordinator = hass.data.get(DOMAIN, {}).get("coordinator")
+        if coordinator is not None and food.get("barcode"):
+            await coordinator.async_catalog_changed(food["barcode"])
         return food if call.return_response else None
 
     async def delete_food(call: ServiceCall):
@@ -105,6 +109,33 @@ def async_setup_services(hass: HomeAssistant) -> None:
 
     async def delete_entry(call: ServiceCall):
         await _run(hass, _store(hass).delete_entry, call.data["entry_id"])
+
+    async def save_pending(call: ServiceCall):
+        coordinator = hass.data.get(DOMAIN, {}).get("coordinator")
+        if coordinator is None:
+            raise ServiceValidationError("Food Diary coordinator is not loaded")
+        entry = await coordinator.async_save_pending()
+        if entry is None:
+            raise ServiceValidationError("No complete pending scan is ready to save")
+        return entry if call.return_response else None
+
+    async def discard_pending(call: ServiceCall):
+        coordinator = hass.data.get(DOMAIN, {}).get("coordinator")
+        if coordinator is None:
+            raise ServiceValidationError("Food Diary coordinator is not loaded")
+        await coordinator.async_discard_pending()
+
+    async def get_status(call: ServiceCall):
+        coordinator = hass.data.get(DOMAIN, {}).get("coordinator")
+        if coordinator is None:
+            raise ServiceValidationError("Food Diary coordinator is not loaded")
+        return {
+            "state": coordinator.state,
+            "last_barcode": coordinator.last_barcode,
+            "last_weight_g": coordinator.last_weight_g,
+            "scan_count": coordinator.last_scan_count,
+            **coordinator.attributes,
+        }
 
     async def period_summary(call: ServiceCall):
         return await _run(
@@ -185,6 +216,21 @@ def async_setup_services(hass: HomeAssistant) -> None:
             delete_entry,
             SupportsResponse.NONE,
         ),
+        "save_pending": (
+            vol.Schema({}),
+            save_pending,
+            SupportsResponse.OPTIONAL,
+        ),
+        "discard_pending": (
+            vol.Schema({}),
+            discard_pending,
+            SupportsResponse.NONE,
+        ),
+        "get_status": (
+            vol.Schema({}),
+            get_status,
+            SupportsResponse.ONLY,
+        ),
         "period_summary": (
             vol.Schema({
                 vol.Required("period"): vol.In(PERIODS),
@@ -218,5 +264,8 @@ def async_unload_services(hass: HomeAssistant) -> None:
         "list_entries",
         "delete_entry",
         "period_summary",
+        "save_pending",
+        "discard_pending",
+        "get_status",
     ):
         hass.services.async_remove(DOMAIN, service_name)
