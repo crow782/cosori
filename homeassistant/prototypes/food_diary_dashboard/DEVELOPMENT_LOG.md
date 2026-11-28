@@ -97,3 +97,39 @@ Aggiunto `.github/workflows/food-diary-prototype.yml`:
 - esecuzione degli unit test SQLite con Python 3.12.
 
 Il workflow è stato aggiunto al branch, ma non è stata ancora osservata un'esecuzione completata: non dichiarare i controlli superati fino al risultato GitHub Actions.
+
+
+## Fase 9 — Correzione del flusso scanner e handoff
+
+La configurazione effettiva del prototipo è ora entity-based:
+- bilancia: entità sensor ESPHome con device class weight;
+- scanner: entità sensor generica che pubblica l'ultimo barcode, ad esempio sensor.barcode_scanner_last_barcode;
+- il device selector ESPHome dello scanner e l'identificatore scanner nel payload non sono più richiesti;
+- il firmware attivo non è stato modificato.
+
+I punti delle fasi 6 e 7 che descrivono la selezione del device scanner e il payload con ID nodo sono decisioni storiche superate da questa scelta. Il codice attuale è la fonte per la configurazione; README, HACS architecture e DATA_CONTRACT sono stati riallineati.
+
+### Ripetizione dello stesso barcode
+
+La documentazione Home Assistant distingue:
+- state_changed: stato o attributi sono cambiati;
+- state_reported: l'entità ha riportato nuovamente lo stato senza variazioni.
+
+Il coordinator dovrà valutare entrambi gli eventi per l'entità selezionata. Non è ancora verificato che il text sensor ESPHome ripubblichi ogni scansione identica; se non lo fa, servirà un evento dedicato o un contatore nel firmware di sviluppo. Riferimenti: https://www.home-assistant.io/docs/configuration/events/ e https://www.home-assistant.io/docs/configuration/state_object.
+
+### Controllo CI
+
+Corretto il workflow per impostare PYTHONPATH alla directory SQLite durante unittest discovery: il test importa storage.py dalla directory padre e senza questo path la discovery dalla cartella tests potrebbe non risolvere il modulo. La modifica è preventiva; non equivale a un test eseguito. La workflow controlla Python 3.12, JSON, compilazione, sincronizzazione delle copie e unit test SQLite. Non esegue hassfest né test Home Assistant.
+
+### Stato esatto al momento della pausa
+
+- Config flow/options flow scritti; non caricati su HA.
+- Storage SQLite e azioni CRUD/summary presenti; test non ancora confermati da CI.
+- Coordinator scanner/peso: non implementato.
+- Open Food Facts nel runtime integrazione: non implementato.
+- Sensori diagnostici: non implementati.
+- Pannello Aurora reale collegato al backend: non implementato; esistono solo mockup HTML statici.
+- HACS/Marketplace: architettura documentata, repository dedicato non creato.
+- Nessun package HA attivo o firmware attivo modificato.
+
+Per riprendere, seguire homeassistant/prototypes/food_diary_integration/RESUME.md.
