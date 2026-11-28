@@ -257,3 +257,9 @@ cmp homeassistant/prototypes/food_diary_sqlite/storage.py homeassistant/prototyp
 ```
 
 I test acquisition caricano direttamente il modulo puro senza importare il package Home Assistant; per questo non richiedono Home Assistant installato. I test config flow, servizi e coordinator richiederanno invece un ambiente HA/pytest dedicato.
+
+## 10. Aurora card prototype
+
+A dependency-free custom Lovelace card is now present at custom_components/food_diary/www/food-diary-card.js. It uses the documented Home Assistant custom-card contract and hass.callService return responses; it calls get_dashboard_data, get_status, add_entry, add_food, delete_entry, search_openfoodfacts, save_pending and discard_pending. It displays day/week/month totals, missing-data days, partial nutrient coverage, meal entries, scanner status, manual portion/product forms and Open Food Facts alternatives.
+
+The integration serves the asset at /food_diary/food-diary-card.js using the HTTP static-path API. The user must still add the resource once in Settings → Dashboards → Resources (module type); automatic Lovelace resource registration was deliberately avoided because no stable public registration API was identified. Example dashboard YAML is in homeassistant/prototypes/food_diary_dashboard/dashboard.yaml. The card and static route have not been tested in HA Core 2026.11.3.
