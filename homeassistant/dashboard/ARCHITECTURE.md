@@ -1,6 +1,6 @@
 # Food Diary – proposta architettura dati
 
-> Stato: **proposta tecnica per la prima versione**, non ancora implementata né installabile. Da validare con una prova su Home Assistant prima di migrare o sostituire il package esistente.
+> Stato: **proposta tecnica + primo prototipo SQLite isolato**. Il livello dati è stato aggiunto in `homeassistant/prototypes/food_diary_sqlite/`; non è ancora un'integrazione Home Assistant e non è installabile. I test sono scritti ma non ancora eseguiti. Il package esistente resta separato e invariato.
 
 ## 1. Decisione proposta
 
