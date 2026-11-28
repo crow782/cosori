@@ -145,3 +145,16 @@ Dettagli packaging: [HACS_ARCHITECTURE.md](../food_diary_integration/HACS_ARCHIT
 - Definire esattamente il contratto per copertura nutrienti e medie.
 - Scegliere frontend in base alle API frontend realmente disponibili.
 - Testare mobile, tablet e desktop.
+
+
+## 10. Runtime acquisition state machine
+
+The prototype coordinator consumes the selected scan counter as the new-scan gate and the selected stable-weight entity as the scale source. It also listens for the current ESPHome event esphome.barcode_scanned, whose payload contains the barcode for that scan. The current firmware publishes the counter first, publishes the last-barcode entity next, then emits the event after 300 ms. The event payload is preferred for the current ESPHome firmware; the selected barcode entity is the fallback for other scanner integrations.
+
+A generic scanner fallback is accepted only when exactly one counter increment is pending. Multiple increments without matching ESPHome events are treated as ambiguous and are never auto-saved. This is intentionally fail-safe rather than guessing which barcode belongs to which count.
+
+A scan session requires a valid barcode, a zero weight at or below the configured threshold after the scan, a later positive reading from the selected stable-weight sensor, and a known local product or successful Open Food Facts lookup.
+
+A non-zero weight at scan time does not count as the portion: the coordinator waits for zero and then a new positive stable reading. Tare remains a physical action; no tare BLE command is assumed.
+
+Unknown products remain pending so a manual catalogue item with the same barcode can resolve the session. A pending session with an already captured positive weight does not expire while waiting for the manual product. Pending sessions are currently memory-only and are lost on Home Assistant restart. Only one active session is supported; additional scans while it is pending are rejected to prevent accidental cross-association.
