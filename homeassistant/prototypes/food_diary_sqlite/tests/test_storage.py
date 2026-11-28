@@ -251,6 +251,14 @@ if __name__ == "__main__":
 
 
 class PendingScanSessionPersistenceTests(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.db_path = Path(self.tempdir.name) / "pending-sessions.db"
+        self.store = FoodDiaryStore(self.db_path)
+
+    def tearDown(self):
+        self.tempdir.cleanup()
+
     def test_pending_session_survives_store_reopen(self):
         created = "2026-11-28T10:00:00+00:00"
         expires = "2026-11-29T10:00:00+00:00"
