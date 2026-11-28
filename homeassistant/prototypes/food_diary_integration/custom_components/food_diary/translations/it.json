@@ -237,6 +237,18 @@
           "description": "Fuso IANA, ad esempio Europe/Rome."
         }
       }
+    },
+    "save_pending": {
+      "name": "Salva porzione in attesa",
+      "description": "Salva la sessione quando prodotto e peso stabile sono disponibili."
+    },
+    "discard_pending": {
+      "name": "Annulla scansione in attesa",
+      "description": "Annulla la sessione corrente senza registrare il consumo."
+    },
+    "get_status": {
+      "name": "Stato acquisizione",
+      "description": "Restituisce lo stato corrente dello scanner e della pesata."
     }
   }
 }
