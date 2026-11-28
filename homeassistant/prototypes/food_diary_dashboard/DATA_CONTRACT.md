@@ -162,3 +162,8 @@ Unknown products remain pending so a manual catalogue item with the same barcode
 ## 11. Alternative product search
 
 The integration exposes a search_openfoodfacts action for text-based alternatives when a barcode lookup does not find a product. It uses Open Food Facts' legacy full-text endpoint, returns a bounded list of normalized product candidates, and does not insert candidates into the local catalogue. The user must explicitly select a candidate and add it through the add_food action. Missing or invalid nutrient fields remain NULL.
+
+
+## 12. Dashboard payload and frontend
+
+The get_dashboard_data action accepts period (day/week/month), anchor_date and IANA timezone. It returns the period summary, all entries in the period and up to 500 local foods. Period boundaries are calculated in the requested timezone, preserving DST behavior. The Aurora custom card uses this payload plus get_status, add_entry, add_food, delete_entry, search_openfoodfacts, save_pending and discard_pending. Missing nutrient values are rendered as unavailable, not zero; days without entries are distinct from days with incomplete nutrient data.
