@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
 from functools import partial
@@ -337,26 +338,73 @@ class FoodDiaryCoordinator:
 
     async def _async_restore_pending_session(self) -> None:
         """Restore an unexpired barcode, requiring a fresh zero and fresh weighing."""
-        record = await self.hass.async_add_executor_job(self.store.get_pending_session)
+        try:
+            record = await self.hass.async_add_executor_job(self.store.get_pending_session)
+        except Exception:
+            _LOGGER.exception("Unable to read pending Food Diary scan from SQLite")
+            self.last_error = "pending_session_restore_failed"
+            self.state = "storage_error"
+            self._notify()
+            return
         if not record:
             return
-        expires_at = datetime.fromisoformat(record["expires_at"]).astimezone(timezone.utc)
-        now = datetime.now(timezone.utc)
-        if expires_at <= now:
-            await self.hass.async_add_executor_job(
-                self.store.delete_pending_session, record["session_id"]
-            )
-            self.last_error = "restored_scan_session_expired"
+
+        session_id = record.get("session_id")
+        try:
+            created_at = datetime.fromisoformat(record["created_at"]).astimezone(timezone.utc)
+            expires_at = datetime.fromisoformat(record["expires_at"]).astimezone(timezone.utc)
+            if not session_id or expires_at <= created_at:
+                raise ValueError("invalid pending session timestamps or ID")
+        except (KeyError, TypeError, ValueError, OverflowError):
+            _LOGGER.warning("Discarding malformed pending Food Diary scan record")
+            try:
+                if session_id:
+                    await self.hass.async_add_executor_job(
+                        self.store.delete_pending_session, session_id
+                    )
+            except Exception:
+                _LOGGER.exception("Unable to remove malformed pending scan record")
+                self.last_error = "pending_session_cleanup_failed"
+                self.state = "storage_error"
+                self._notify()
+                return
+            self.last_error = "restored_scan_session_invalid"
+            self._notify()
             return
+
+        if expires_at <= datetime.now(timezone.utc):
+            try:
+                await self.hass.async_add_executor_job(
+                    self.store.delete_pending_session, session_id
+                )
+            except Exception:
+                _LOGGER.exception("Unable to remove expired pending scan record")
+                self.last_error = "pending_session_cleanup_failed"
+                self.state = "storage_error"
+                self._notify()
+                return
+            self.last_error = "restored_scan_session_expired"
+            self._notify()
+            return
+
         barcode = normalize_barcode(record.get("barcode"))
         if barcode is None:
-            await self.hass.async_add_executor_job(
-                self.store.delete_pending_session, record["session_id"]
-            )
+            try:
+                await self.hass.async_add_executor_job(
+                    self.store.delete_pending_session, session_id
+                )
+            except Exception:
+                _LOGGER.exception("Unable to remove invalid pending scan record")
+                self.last_error = "pending_session_cleanup_failed"
+                self.state = "storage_error"
+                self._notify()
+                return
             self.last_error = "restored_scan_session_invalid"
+            self._notify()
             return
-        self._session_id = record["session_id"]
-        self._session_created_at = datetime.fromisoformat(record["created_at"]).astimezone(timezone.utc)
+
+        self._session_id = session_id
+        self._session_created_at = created_at
         self._session_expires_at = expires_at
         self._session_restored = True
         self._session = ScanSession(
@@ -365,9 +413,18 @@ class FoodDiaryCoordinator:
             weight_g=None,
             status="restored_requires_reweigh",
         )
-        food = await self.hass.async_add_executor_job(
-            self.store.find_food_by_barcode, barcode
-        )
+        try:
+            food = await self.hass.async_add_executor_job(
+                self.store.find_food_by_barcode, barcode
+            )
+        except sqlite3.Error:
+            _LOGGER.exception("Unable to resolve restored barcode in SQLite")
+            self._session.status = "storage_error"
+            self.last_error = "catalog_lookup_failed"
+            self.state = "storage_error"
+            self._schedule_session_expiry()
+            self._notify()
+            return
         if food is not None:
             self._session.food = food
             self._session.status = "restored_requires_reweigh"
