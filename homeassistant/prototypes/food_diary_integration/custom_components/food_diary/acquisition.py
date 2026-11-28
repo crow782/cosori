@@ -98,15 +98,24 @@ def parse_openfoodfacts_product(
             energy = float(nutriments["energy-kj_100g"]) / 4.184
         except (TypeError, ValueError):
             energy = None
+    def optional_number(raw: Any) -> float | None:
+        if raw is None or raw == "":
+            return None
+        try:
+            number = float(raw)
+        except (TypeError, ValueError):
+            return None
+        return number if math.isfinite(number) and number >= 0 else None
+
     nutrients = {
-        "energy_kcal": energy,
-        "protein_g": nutriments.get("proteins_100g"),
-        "carbohydrates_g": nutriments.get("carbohydrates_100g"),
-        "sugars_g": nutriments.get("sugars_100g"),
-        "fat_g": nutriments.get("fat_100g"),
-        "saturated_fat_g": nutriments.get("saturated-fat_100g"),
-        "fiber_g": nutriments.get("fiber_100g"),
-        "salt_g": nutriments.get("salt_100g"),
+        "energy_kcal": optional_number(energy),
+        "protein_g": optional_number(nutriments.get("proteins_100g")),
+        "carbohydrates_g": optional_number(nutriments.get("carbohydrates_100g")),
+        "sugars_g": optional_number(nutriments.get("sugars_100g")),
+        "fat_g": optional_number(nutriments.get("fat_100g")),
+        "saturated_fat_g": optional_number(nutriments.get("saturated-fat_100g")),
+        "fiber_g": optional_number(nutriments.get("fiber_100g")),
+        "salt_g": optional_number(nutriments.get("salt_100g")),
     }
     return {
         "name": name,
