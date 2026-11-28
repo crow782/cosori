@@ -9,6 +9,7 @@ class FoodDiaryAuroraCard extends HTMLElement {
     this._status = null;
     this._loading = false;
     this._refreshAgain = false;
+    this._refreshPending = false;
     this._error = null;
     this._notice = null;
     this._offProducts = [];
@@ -35,7 +36,11 @@ class FoodDiaryAuroraCard extends HTMLElement {
     ].join("|");
     if (signature !== this._lastSignature) {
       this._lastSignature = signature;
-      this._refresh();
+      if (this.shadowRoot.querySelector("details[open]")) {
+        this._refreshPending = true;
+      } else {
+        this._refresh();
+      }
     }
   }
 
@@ -292,6 +297,7 @@ class FoodDiaryAuroraCard extends HTMLElement {
     const button = event.target.closest("button");
     if (!button) return;
     try {
+      this._refreshPending = false;
       if (button.dataset.period) {
         this._period = button.dataset.period;
         this._refresh();
@@ -353,6 +359,7 @@ class FoodDiaryAuroraCard extends HTMLElement {
         this._notice = this._offProducts.length + " alternative trovate";
       }
       form.reset();
+      this._refreshPending = false;
       this._refresh();
     } catch (error) {
       this._error = error?.message || String(error);
