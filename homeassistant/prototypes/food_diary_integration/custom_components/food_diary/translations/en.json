@@ -26,7 +26,8 @@
     "error": {
       "invalid_weight_entity": "Select a registered ESPHome weight sensor.",
       "invalid_barcode_entity": "Select a sensor entity registered in Home Assistant.",
-      "invalid_scan_count_entity": "Select a registered Home Assistant sensor entity for the scan counter."
+      "invalid_scan_count_entity": "Select a registered Home Assistant sensor entity for the scan counter.",
+      "duplicate_entities": "Select three different entities for the scale, barcode and scan counter."
     }
   },
   "options": {
