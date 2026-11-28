@@ -246,3 +246,14 @@ Riferimenti API ufficiali Open Food Facts consultati:
 
 
 Ultimo aggiornamento tecnico: il parser del contatore è stato estratto in una funzione pura e i test coprono baseline iniziale, incremento singolo, burst, reset e valore non valido. Il setup dell'integrazione ora pulisce listener, servizi e riferimenti se il setup del coordinator o della piattaforma sensori fallisce.
+
+### Comandi locali per i test (dalla root del repository)
+
+```bash
+python -m compileall -q homeassistant/prototypes/food_diary_integration/custom_components/food_diary homeassistant/prototypes/food_diary_sqlite
+PYTHONPATH=homeassistant/prototypes/food_diary_integration/custom_components python -m unittest discover -s homeassistant/prototypes/food_diary_integration/custom_components/food_diary -p 'test_*.py' -v
+PYTHONPATH=homeassistant/prototypes/food_diary_sqlite python -m unittest discover -s homeassistant/prototypes/food_diary_sqlite/tests -v
+cmp homeassistant/prototypes/food_diary_sqlite/storage.py homeassistant/prototypes/food_diary_integration/custom_components/food_diary/storage.py
+```
+
+I test acquisition caricano direttamente il modulo puro senza importare il package Home Assistant; per questo non richiedono Home Assistant installato. I test config flow, servizi e coordinator richiederanno invece un ambiente HA/pytest dedicato.
