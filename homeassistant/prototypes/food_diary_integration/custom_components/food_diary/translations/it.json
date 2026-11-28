@@ -249,6 +249,10 @@
     "get_status": {
       "name": "Stato acquisizione",
       "description": "Restituisce lo stato corrente dello scanner e della pesata."
+    },
+    "search_openfoodfacts": {
+      "name": "Cerca alternative su Open Food Facts",
+      "description": "Cerca prodotti alternativi per nome. I risultati non vengono aggiunti automaticamente al catalogo."
     }
   }
 }
