@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Connect your sensors",
-        "description": "Select the ESPHome weight sensor and the sensor entity that publishes scanned barcodes.",
+        "description": "Select the ESPHome weight sensor, the last-barcode sensor, and the counter that increments on every scan.",
         "data": {
           "weight_entity": {
             "name": "Weight sensor",
@@ -12,6 +12,10 @@
           "barcode_entity": {
             "name": "Barcode entity",
             "description": "Choose the sensor containing the last scanned barcode, for example sensor.barcode_scanner_last_barcode."
+          },
+          "scan_count_entity": {
+            "name": "Scan counter",
+            "description": "Sensor that increments on every scan, including repeated identical barcodes. Example: sensor.barcode_scanner_scan_count."
           }
         }
       }
@@ -21,7 +25,8 @@
     },
     "error": {
       "invalid_weight_entity": "Select a registered ESPHome weight sensor.",
-      "invalid_barcode_entity": "Select a sensor entity registered in Home Assistant."
+      "invalid_barcode_entity": "Select a sensor entity registered in Home Assistant.",
+      "invalid_scan_count_entity": "Select a registered Home Assistant sensor entity for the scan counter."
     }
   },
   "options": {
@@ -65,6 +70,10 @@
           "barcode_entity": {
             "name": "Barcode entity",
             "description": "Sensor publishing the last barcode read by the GM67 or another scanner."
+          },
+          "scan_count_entity": {
+            "name": "Scan counter",
+            "description": "Sensor used to trigger every new read, including repeated scans of the same barcode."
           }
         }
       }
