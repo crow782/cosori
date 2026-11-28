@@ -145,6 +145,14 @@ class CoordinatorConcurrencyTests(unittest.IsolatedAsyncioTestCase):
         await coordinator._async_accept_event_barcode("8017596008299")
         self.assertEqual(calls, ["8017596008299"])
 
+    async def test_counter_burst_with_duplicate_barcode_is_rejected_as_ambiguous(self):
+        coordinator, _ = make()
+        coordinator._last_counter = 10
+        await coordinator._async_counter_changed(SimpleNamespace(state="12"))
+        self.assertEqual(coordinator.state, "scan_sequence_ambiguous")
+        self.assertEqual(coordinator._pending_counter_events, 0)
+        self.assertIsNone(coordinator._session)
+
     async def test_two_simultaneous_saves_write_one_entry(self):
         coordinator, store = make()
         session = ScanSession("8017596008299", True, 120, {"id": 7}, "ready")
