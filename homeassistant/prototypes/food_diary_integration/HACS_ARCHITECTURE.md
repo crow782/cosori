@@ -136,11 +136,11 @@ L'installazione utente prevista è Marketplace integrato. La pubblicazione del r
 
 ## Runtime coordinator prototype (not release-ready)
 
-The current source prototype includes a coordinator, a pure acquisition helper, diagnostic sensor entities and manual pending-session actions. It uses the selected scan counter as the trigger. For the current GM67 firmware, the coordinator also consumes esphome.barcode_scanned after the counter increment; the event reads Last Barcode at event time, so it is only accepted when exactly one counter increment is pending and its payload matches the selected barcode entity. This event is important because the firmware publishes the counter before the last-barcode sensor and delays the event by 300 ms. A generic scanner fallback reads the selected barcode entity only when exactly one counter increment is pending. Ambiguous multi-increment fallback never auto-saves.
+The current source prototype includes a coordinator, a pure acquisition helper, diagnostic sensor entities and manual pending-session actions. Pending barcode sessions are stored in SQLite for 24 hours; after restart, a fresh zero and fresh positive weighing are required. The previously accepted weight is never restored. It uses the selected scan counter as the trigger. For the current GM67 firmware, the coordinator also consumes esphome.barcode_scanned after the counter increment; the event reads Last Barcode at event time, so it is only accepted when exactly one counter increment is pending and its payload matches the selected barcode entity. This event is important because the firmware publishes the counter before the last-barcode sensor and delays the event by 300 ms. A generic scanner fallback reads the selected barcode entity only when exactly one counter increment is pending. Ambiguous multi-increment fallback never auto-saves.
 
 The coordinator requires a zero reading after scan followed by a positive stable-weight reading. It performs local catalogue lookup first, then Open Food Facts v3 using Home Assistant's shared aiohttp session. Unknown products can be resolved by adding a catalogue food with the matching barcode. Diagnostic entities and save_pending, discard_pending, get_status, and search_openfoodfacts actions are present. Text-search candidates are not inserted into the local catalogue until the user explicitly adds one.
 
-This implementation is still experimental: no Home Assistant runtime tests or physical device tests have passed, pending sessions are in-memory only, and the Aurora dashboard is not connected.
+This implementation is still experimental: no Home Assistant runtime tests or physical device tests have passed, and the Aurora dashboard is not connected.
 
 ## Aurora Lovelace asset
 
