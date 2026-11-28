@@ -54,8 +54,8 @@ class OpenFoodFactsParserTests(unittest.TestCase):
             "8017596008299",
         )
         self.assertIsNotNone(product)
-        self.assertEqual(product["nutrients_per_100g"]["energy_kcal"], "62")
-        self.assertEqual(product["nutrients_per_100g"]["protein_g"], "4.5")
+        self.assertEqual(product["nutrients_per_100g"]["energy_kcal"], 62.0)
+        self.assertEqual(product["nutrients_per_100g"]["protein_g"], 4.5)
         self.assertIsNone(product["nutrients_per_100g"]["fat_g"])
 
     def test_converts_kj_to_kcal_when_kcal_missing(self):
@@ -64,6 +64,14 @@ class OpenFoodFactsParserTests(unittest.TestCase):
             "8017596008299",
         )
         self.assertAlmostEqual(product["nutrients_per_100g"]["energy_kcal"], 100)
+
+    def test_invalid_nutrient_values_remain_unknown(self):
+        product = parse_openfoodfacts_product(
+            {"status": 1, "product": {"product_name": "Food", "nutriments": {"proteins_100g": "trace", "fat_100g": "-1"}}},
+            "8017596008299",
+        )
+        self.assertIsNone(product["nutrients_per_100g"]["protein_g"])
+        self.assertIsNone(product["nutrients_per_100g"]["fat_g"])
 
     def test_rejects_not_found_or_missing_product_name(self):
         self.assertIsNone(parse_openfoodfacts_product({"status": 0}, "8017596008299"))
