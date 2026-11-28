@@ -26,7 +26,8 @@
     "error": {
       "invalid_weight_entity": "Seleziona un sensore di peso registrato tramite ESPHome.",
       "invalid_barcode_entity": "Seleziona un'entità sensore barcode registrata in Home Assistant.",
-      "invalid_scan_count_entity": "Seleziona un'entità sensore registrata in Home Assistant per il contatore scansioni."
+      "invalid_scan_count_entity": "Seleziona un'entità sensore registrata in Home Assistant per il contatore scansioni.",
+      "duplicate_entities": "Seleziona tre entità distinte per bilancia, barcode e contatore scansioni."
     }
   },
   "options": {
