@@ -83,7 +83,8 @@ as entity states. See the official [integration service actions guide](https://d
 
 The config flow now asks for:
 - an ESPHome sensor entity filtered to the weight device class;
-- a generic Home Assistant `sensor` entity that publishes the last scanned barcode (for example `sensor.barcode_scanner_last_barcode`);\n- a generic Home Assistant `sensor` entity used as the scan counter trigger (for example `sensor.barcode_scanner_scan_count`).
+- a generic Home Assistant `sensor` entity that publishes the last scanned barcode (for example `sensor.barcode_scanner_last_barcode`);
+- a generic Home Assistant `sensor` entity used as the scan counter trigger (for example `sensor.barcode_scanner_scan_count`).
 
 The options flow allows changing all three entity selections and configuring default meal,
 automatic save, weight timeout, zero threshold, and Open Food Facts country,
