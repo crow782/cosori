@@ -149,3 +149,18 @@ Decisione aggiornata:
 - gestire e testare l'ordine di pubblicazione per evitare di leggere un barcode vecchio quando il contatore è già avanzato.
 
 Nessuna modifica al firmware attivo. La modifica del config flow resta prototipale e deve essere testata con HA Core 2026.11.3.
+
+## Fase 11 — Coordinator, Open Food Facts e diagnostica (2026-11-28)
+
+Implementati nel prototipo:
+- acquisition.py: parsing barcode e pesi, normalizzazione g/kg/mg, sessione con gate zero→peso positivo, parser OFF con valori nutrienti ignoti mantenuti NULL;
+- coordinator.py: listener selettivo su scan counter e weight stable; ascolto evento esphome.barcode_scanned; lookup catalogo locale e OFF v2; autosave con protezione concorrenza; timeout; sessione sconosciuta; fallback scanner generici;
+- sensor.py: entità diagnostiche stato, ultimo barcode, ultimo peso stabile e scan count;
+- servizi save_pending, discard_pending, get_status;
+- callback su add_food e update_food per risolvere una sessione sconosciuta;
+- test unitari standard library per parsing, conversione peso, zero gate e dati OFF;
+- CI aggiornata per eseguire i test di acquisizione.
+
+Comportamento firmware letto nel repository: barcode_raw incrementa e pubblica scan_count, poi pubblica last_barcode, poi dopo 300 ms emette l'evento con il barcode specifico. L'evento è il payload più affidabile per le scansioni ravvicinate; il contatore è la guardia. Il fallback per scanner generici è consentito solo per un incremento pendente.
+
+Limiti: non eseguito alcun test dentro Home Assistant Core; non è disponibile un risultato GitHub Actions completato da attestare; sessione pendente in RAM, non ripristinata dopo riavvio; un prodotto alla volta; scansione successiva durante sessione aperta rifiutata; nessuna modifica al firmware attivo o package HA attivi.
