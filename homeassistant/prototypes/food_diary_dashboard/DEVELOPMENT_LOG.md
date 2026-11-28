@@ -133,3 +133,19 @@ Corretto il workflow per impostare PYTHONPATH alla directory SQLite durante unit
 - Nessun package HA attivo o firmware attivo modificato.
 
 Per riprendere, seguire homeassistant/prototypes/food_diary_integration/RESUME.md.
+
+
+## Fase 10 — Contatore scansioni GM67 confermato dall'utente
+
+L'utente ha confermato sul dispositivo:
+- `sensor.barcode_scanner_last_barcode` mantiene l'ultimo barcode; una scansione identica non cambia lo stato e non crea un nuovo punto nella cronologia.
+- `sensor.barcode_scanner_scan_count` avanza a ogni scansione, comprese quelle ripetute.
+
+Decisione aggiornata:
+- selezionare tre entità: sensore peso stabile, sensore ultimo barcode e contatore scansioni;
+- ascoltare `state_changed` sul contatore;
+- leggere il barcode dall'entità last_barcode a ogni trigger;
+- non usare `state_reported` come meccanismo primario per dedurre una nuova scansione;
+- gestire e testare l'ordine di pubblicazione per evitare di leggere un barcode vecchio quando il contatore è già avanzato.
+
+Nessuna modifica al firmware attivo. La modifica del config flow resta prototipale e deve essere testata con HA Core 2026.11.3.
