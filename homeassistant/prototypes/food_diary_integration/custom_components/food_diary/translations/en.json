@@ -237,6 +237,18 @@
           "description": "IANA timezone, for example Europe/Rome."
         }
       }
+    },
+    "save_pending": {
+      "name": "Save pending portion",
+      "description": "Save the current session when product and stable weight are available."
+    },
+    "discard_pending": {
+      "name": "Discard pending scan",
+      "description": "Discard the current session without saving a diary entry."
+    },
+    "get_status": {
+      "name": "Get acquisition status",
+      "description": "Return the current scanner and weighing state."
     }
   }
 }
