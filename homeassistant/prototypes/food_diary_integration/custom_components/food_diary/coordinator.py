@@ -14,6 +14,7 @@ from homeassistant.helpers.event import async_call_later, async_track_state_chan
 
 from .acquisition import (
     ScanSession,
+    classify_counter_change,
     normalize_barcode,
     parse_openfoodfacts_product,
     parse_weight_grams,
@@ -173,7 +174,8 @@ class FoodDiaryCoordinator:
         if self._stopped or new_state is None:
             return
         current = self._parse_counter(new_state.state)
-        if current is None:
+        change, increment = classify_counter_change(self._last_counter, current)
+        if change == "invalid":
             self._pending_counter_events = 0
             if self._fallback_cancel:
                 self._fallback_cancel()
@@ -182,15 +184,14 @@ class FoodDiaryCoordinator:
             self.state = "sensor_error"
             self._notify()
             return
-        if self._last_counter is None:
+        if change == "baseline":
             self._last_counter = current
             self.last_scan_count = current
             self._notify()
             return
-        previous = self._last_counter
         self._last_counter = current
         self.last_scan_count = current
-        if current < previous:
+        if change == "reset":
             # ESPHome reboot/restore reset: rebase, never interpret as a scan.
             self._pending_counter_events = 0
             if self._fallback_cancel:
@@ -200,7 +201,6 @@ class FoodDiaryCoordinator:
             self.state = "ready"
             self._notify()
             return
-        increment = current - previous
         if increment <= 0:
             return
         self._pending_counter_events += increment
