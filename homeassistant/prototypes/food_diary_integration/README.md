@@ -111,6 +111,9 @@ The scanner is configured through two generic sensor entities: `sensor.barcode_s
 | `list_entries` | Read entries in a time range | Entry list |
 | `delete_entry` | Delete one diary entry | None |
 | `period_summary` | Day/week/month totals | Summary object |
+| `save_pending` | Save a complete pending scan session | Optional saved entry |
+| `discard_pending` | Discard the pending scan session | None |
+| `get_status` | Read acquisition status and diagnostics | Status object |
 
 Read-only actions use Home Assistant's response-data support. Mutating actions
 that return a created/updated record use optional response data. SQLite work is
