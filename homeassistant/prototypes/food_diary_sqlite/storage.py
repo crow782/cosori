@@ -9,7 +9,8 @@ import json
 import math
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -165,9 +166,17 @@ class FoodDiaryStore:
             source = changes.get("source", current["source"])
             if source not in FOOD_SOURCES:
                 raise ValueError("unsupported food source")
-            nutrients = _nutrient_values(
-                changes.get("nutrients_per_100g", {k: current[k] for k in NUTRIENTS})
-            )
+            # A partial edit preserves omitted nutrients; explicit None clears one.
+            merged_nutrients = {key: current[key] for key in NUTRIENTS}
+            if "nutrients_per_100g" in changes:
+                supplied = changes["nutrients_per_100g"] or {}
+                unknown_nutrients = set(supplied) - set(NUTRIENTS)
+                if unknown_nutrients:
+                    raise ValueError(
+                        f"unsupported nutrients: {', '.join(sorted(unknown_nutrients))}"
+                    )
+                merged_nutrients.update(supplied)
+            nutrients = _nutrient_values(merged_nutrients)
             db.execute(
                 """UPDATE foods SET name=?,brand=?,barcode=?,energy_kcal=?,protein_g=?,
                 carbohydrates_g=?,sugars_g=?,fat_g=?,saturated_fat_g=?,fiber_g=?,salt_g=?,
@@ -258,6 +267,93 @@ class FoodDiaryStore:
             cursor = db.execute("DELETE FROM entries WHERE id=?", (entry_id,))
             if cursor.rowcount == 0:
                 raise KeyError(entry_id)
+
+
+    @staticmethod
+    def _sum_nutrients(rows: list[dict[str, Any]]) -> dict[str, float | None]:
+        """Sum known nutrient values; keep a nutrient NULL if every row is unknown."""
+        totals: dict[str, float | None] = {}
+        for key in NUTRIENTS:
+            known = [row[key] for row in rows if row[key] is not None]
+            totals[key] = sum(known) if known else None
+        return totals
+
+    def period_summary(
+        self, period: str, anchor_date: str | date, timezone_name: str
+    ) -> dict[str, Any]:
+        """Return local-calendar totals for one day, ISO week, or calendar month.
+
+        anchor_date selects the day/week/month. timezone_name must be an IANA
+        zone such as Europe/Rome. Stored timestamps remain UTC; local grouping
+        occurs after conversion so DST days can be 23 or 25 hours long.
+        """
+        if isinstance(anchor_date, str):
+            try:
+                selected_date = date.fromisoformat(anchor_date)
+            except ValueError as exc:
+                raise ValueError("anchor_date must be YYYY-MM-DD") from exc
+        elif isinstance(anchor_date, date):
+            selected_date = anchor_date
+        else:
+            raise ValueError("anchor_date must be a date or YYYY-MM-DD string")
+
+        try:
+            local_zone = ZoneInfo(timezone_name)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("timezone_name must be a valid IANA timezone") from exc
+
+        if period == "day":
+            first_day = selected_date
+            last_day = first_day + timedelta(days=1)
+        elif period == "week":
+            first_day = selected_date - timedelta(days=selected_date.weekday())
+            last_day = first_day + timedelta(days=7)
+        elif period == "month":
+            first_day = selected_date.replace(day=1)
+            if first_day.month == 12:
+                last_day = date(first_day.year + 1, 1, 1)
+            else:
+                last_day = date(first_day.year, first_day.month + 1, 1)
+        else:
+            raise ValueError("period must be 'day', 'week', or 'month'")
+
+        local_start = datetime.combine(first_day, datetime.min.time(), local_zone)
+        local_end = datetime.combine(last_day, datetime.min.time(), local_zone)
+        entries = self.list_entries(local_start.isoformat(), local_end.isoformat())
+
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for entry in entries:
+            consumed = datetime.fromisoformat(entry["consumed_at"]).astimezone(local_zone)
+            grouped.setdefault(consumed.date().isoformat(), []).append(entry)
+
+        by_day: list[dict[str, Any]] = []
+        for day_key in sorted(grouped):
+            day_entries = grouped[day_key]
+            by_meal: dict[str, Any] = {}
+            for meal in sorted(MEALS):
+                meal_entries = [item for item in day_entries if item["meal_type"] == meal]
+                if meal_entries:
+                    by_meal[meal] = {
+                        "entry_count": len(meal_entries),
+                        "totals": self._sum_nutrients(meal_entries),
+                    }
+            by_day.append({
+                "date": day_key,
+                "entry_count": len(day_entries),
+                "totals": self._sum_nutrients(day_entries),
+                "by_meal": by_meal,
+            })
+
+        return {
+            "period": period,
+            "timezone": timezone_name,
+            "start_date": first_day.isoformat(),
+            "end_date_exclusive": last_day.isoformat(),
+            "entry_count": len(entries),
+            "days_with_entries": len(by_day),
+            "totals": self._sum_nutrients(entries),
+            "by_day": by_day,
+        }
 
     def integrity_check(self) -> str:
         with self._connect() as db:
