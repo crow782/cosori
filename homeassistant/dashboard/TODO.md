@@ -2,6 +2,14 @@
 
 > Documento di pianificazione: **non è ancora una dashboard installabile**. Qui raccogliamo requisiti, flussi e decisioni da verificare prima di scrivere Lovelace YAML o modificare il package Home Assistant.
 
+## Stato del design grafico
+
+È stato avviato un prototipo visuale autonomo in `homeassistant/prototypes/food_diary_dashboard/`:
+- `DESIGN.md`: palette Aurora, gerarchia, comportamento responsive e principi UX.
+- `index.html`: mockup statico responsive con riepilogo calorie, macro, dispositivi, azioni rapide, pasti, ultima acquisizione e archivio ricercabile.
+
+Il mockup usa esclusivamente dati fittizi, non chiama Home Assistant e non è installabile. Non sono stati modificati package, firmware o dashboard attive. Restano da verificare rendering reale, accessibilità e mappatura sulle entità/azioni effettivamente implementate.
+
 ## Obiettivo
 
 Realizzare in Home Assistant un diario alimentare semplice da usare, responsive su PC, tablet e telefono, collegato alla bilancia Cosori CNS-R101S e allo scanner GM67. La dashboard deve permettere sia la registrazione automatica tramite barcode + peso sia la gestione manuale quando la scansione o la ricerca del prodotto non riescono.
