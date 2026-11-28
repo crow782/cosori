@@ -39,6 +39,44 @@ The database will be created under:
 Neither path is used by this prototype in the repository. No active HA files
 have been changed.
 
+## Example action calls
+
+Search the local food catalogue (the action supports response data):
+
+```yaml
+action: food_diary.search_foods
+data:
+  query: yogurt
+  limit: 50
+response_variable: food_search
+```
+
+Record a portion after selecting a known food:
+
+```yaml
+action: food_diary.add_entry
+data:
+  food_id: "<food-id-from-search>"
+  weight_g: 125
+  meal_type: breakfast
+  source: catalog
+```
+
+Retrieve a local calendar-week summary:
+
+```yaml
+action: food_diary.period_summary
+data:
+  period: week
+  anchor_date: "2026-11-25"
+  timezone: Europe/Rome
+response_variable: food_week
+```
+
+The action response feature is the current Home Assistant mechanism for
+returning collections and structured results that should not be represented
+as entity states. See the official [integration service actions guide](https://developers.home-assistant.io/docs/dev_101_services/).
+
 ## Actions
 
 | Action | Purpose | Response |
