@@ -165,7 +165,7 @@ is promoted out of the prototypes area.
 
 ## Acquisition runtime prototype
 
-The prototype coordinator now listens to the selected scan-count sensor and the selected stable-weight sensor. It also listens for the current ESPHome event esphome.barcode_scanned. The current firmware increments the counter, publishes Last Barcode, then emits one delayed event carrying the barcode for that exact scan. The counter gates the event; its payload preserves the exact barcode even if another scan updates the last-value sensor before the previous event is handled.
+The prototype coordinator now listens to the selected scan-count sensor and the selected stable-weight sensor. It also listens for the current ESPHome event esphome.barcode_scanned. The current firmware increments the counter, publishes Last Barcode, then emits a delayed event that reads the current Last Barcode value at event time. The counter gates the event; its payload preserves the exact barcode even if another scan updates the last-value sensor before the previous event is handled.
 
 One scan session is accepted at a time. A session requires a zero reading at or below the configured threshold after the scan, followed by a positive stable-weight reading. This protects against a non-empty scale at scan time: the first positive value is ignored until zero is observed and a later positive value arrives. The integration does not command tare; tare remains physical.
 
@@ -180,3 +180,6 @@ The current pending session is held in memory; a Home Assistant restart during a
 Runtime code is still experimental and has not been loaded in Home Assistant or tested with the physical devices.
 
 Open Food Facts compatibility note: barcode lookup uses the current v3 product API. The text alternative search currently uses the legacy full-text endpoint because Open Food Facts documents full-text search as unavailable in v2/v3 and still served by the legacy endpoint. Keep this isolated behind the coordinator method so it can be replaced when the dedicated search service is available.
+
+
+Important scan ordering safeguard: the ESPHome event is delayed and reads the current Last Barcode value when it fires; it is not an immutable snapshot of the original scan. The coordinator therefore accepts an event only when exactly one scan-counter increment is pending and the event barcode matches the selected Last Barcode entity. If a second increment overlaps, the sequence is marked ambiguous and nothing is auto-saved.
