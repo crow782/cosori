@@ -62,7 +62,7 @@ logger:
 # Enable Home Assistant API
 api:
   encryption:
-    key: ZWsshTl9jxVJqB7FzUtYGyc0Gz3iVZ9jXWqlSvQJ3NU=
+    key: !secret api_encryption_key
   on_client_connected:
     - script.stop: standby_timer
     - script.execute: show_ready
@@ -70,7 +70,7 @@ api:
 
 ota:
   - platform: esphome
-    password: xvxvxcvrvd
+    password: !secret ota_password
 
 wifi:
   ssid: !secret wifi_ssid
