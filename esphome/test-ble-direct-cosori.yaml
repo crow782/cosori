@@ -71,7 +71,7 @@ esp32_ble_tracker:
 
             char raw_hex[128];
             size_t raw_pos = 0;
-            raw_hex[0] = '\\0';
+            raw_hex[0] = '\0';
             for (size_t i = 0; i < raw.adv_data_len &&
                                raw_pos < sizeof(raw_hex) - 4; i++) {
               raw_pos += snprintf(raw_hex + raw_pos,
@@ -83,7 +83,7 @@ esp32_ble_tracker:
                      (unsigned) raw.adv_data_len, raw_hex);
 
             raw_pos = 0;
-            raw_hex[0] = '\\0';
+            raw_hex[0] = '\0';
             for (size_t i = 0; i < raw.scan_rsp_len &&
                                raw_pos < sizeof(raw_hex) - 4; i++) {
               raw_pos += snprintf(raw_hex + raw_pos,
