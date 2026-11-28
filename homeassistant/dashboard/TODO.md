@@ -122,3 +122,24 @@ Non è ancora un diario storico: non registra una serie di pasti, non assegna gl
 - [ ] Collegare dashboard solo dopo test backend su istanza HA separata.
 
 Contratto: [DATA_CONTRACT.md](../prototypes/food_diary_dashboard/DATA_CONTRACT.md).
+
+
+## Compatibilità 2026 e distribuzione HACS
+
+Ambiente di riferimento confermato: HA OS 18.4, Core 2026.11.3, Supervisor 2026.11.0, Frontend 20261028.8.
+
+- [x] Definire obiettivo: integrazione completa, configurabile da UI e distribuibile tramite HACS/Marketplace.
+- [x] Decidere repository pubblico dedicato, separato da `crow782/cosori`.
+- [x] Decidere che il pacchetto includerà il pannello Aurora locale, per evitare una seconda installazione HACS.
+- [x] Definire selettore ESPHome per sensore peso stabile e selettore ESPHome per device scanner.
+- [ ] Implementare config flow reale e options flow con selettori nativi.
+- [ ] Correggere lifecycle config entry e registrazione/rimozione servizi.
+- [ ] Aggiungere identificatore scanner all'evento ESPHome e testare scansioni ripetute.
+- [ ] Implementare coordinator per correlazione barcode/peso stabile/timeout.
+- [ ] Implementare pannello frontend locale e registrazione con API pubbliche HA.
+- [ ] Sostituire `strings.json` con traduzioni custom in `translations/en.json` e `translations/it.json`.
+- [ ] Completare manifest HACS, `hacs.json`, issue tracker, codeowners, brand e release.
+- [ ] Creare repository dedicato e trasferire solo il pacchetto validato.
+- [ ] Testare più versioni Core 2026, hassfest, test integrazione e installazione/upgrade HACS.
+
+Specifica: [HACS_ARCHITECTURE.md](../prototypes/food_diary_integration/HACS_ARCHITECTURE.md).
