@@ -3,7 +3,17 @@
     "step": {
       "user": {
         "title": "Connect your devices",
-        "description": "Select the ESPHome weight sensor and the ESPHome device that sends barcode scans."
+        "description": "Select the ESPHome weight sensor and the ESPHome device that sends barcode scans.",
+        "data": {
+          "weight_entity": {
+            "name": "Weight sensor",
+            "description": "Choose the stable weight sensor from your ESPHome scale."
+          },
+          "scanner_device_id": {
+            "name": "Barcode scanner",
+            "description": "Choose the ESPHome device that sends barcode scan events."
+          }
+        }
       }
     },
     "abort": {
@@ -18,7 +28,45 @@
     "step": {
       "init": {
         "title": "Food Diary settings",
-        "description": "Choose the connected devices and adjust the weighing workflow and product lookup."
+        "description": "Choose the connected devices and adjust the weighing workflow and product lookup.",
+        "data": {
+          "weight_entity": {
+            "name": "Weight sensor",
+            "description": "ESPHome stable weight sensor used for automatic portion capture."
+          },
+          "scanner_device_id": {
+            "name": "Barcode scanner",
+            "description": "ESPHome device used as the source of barcode scans."
+          },
+          "default_meal": {
+            "name": "Default meal",
+            "description": "Meal preselected for new portions."
+          },
+          "auto_save": {
+            "name": "Save automatically",
+            "description": "Save a known product when a new stable positive weight is detected."
+          },
+          "weight_timeout_seconds": {
+            "name": "Weight timeout",
+            "description": "Maximum seconds to wait for a stable weight after scanning."
+          },
+          "zero_threshold_g": {
+            "name": "Zero threshold",
+            "description": "Weight values at or below this number of grams are treated as zero."
+          },
+          "openfoodfacts_enabled": {
+            "name": "Use Open Food Facts",
+            "description": "Look up barcodes not present in the local catalogue."
+          },
+          "openfoodfacts_country": {
+            "name": "Open Food Facts country",
+            "description": "Two-letter country code, for example it."
+          },
+          "openfoodfacts_language": {
+            "name": "Product language",
+            "description": "Language code used for product lookup, for example it."
+          }
+        }
       }
     }
   },
