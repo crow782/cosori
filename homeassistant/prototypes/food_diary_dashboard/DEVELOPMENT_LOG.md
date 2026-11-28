@@ -86,3 +86,14 @@ Implementati nel prototipo:
 **Limite bloccante noto:** il firmware ESPHome attuale emette `esphome.barcode_scanned` con il solo campo `barcode`. Per filtrare le scansioni in base al device selezionato serve aggiungere un identificatore stabile del nodo nel payload e verificarne la corrispondenza col device registry. Il firmware attivo non è stato modificato.
 
 **Validazione:** il codice è stato scritto su GitHub, ma non è stato eseguito dentro Home Assistant 2026.11.3; non sono ancora passati hassfest, test config flow, test d'integrazione o test su dispositivo.
+
+
+## Fase 8 — Controlli automatici del prototipo
+
+Aggiunto `.github/workflows/food-diary-prototype.yml`:
+- compilazione sintattica Python;
+- validazione JSON di manifest e traduzioni;
+- confronto tra le due copie di `storage.py`;
+- esecuzione degli unit test SQLite con Python 3.12.
+
+Il workflow è stato aggiunto al branch, ma non è stata ancora osservata un'esecuzione completata: non dichiarare i controlli superati fino al risultato GitHub Actions.
