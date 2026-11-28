@@ -13,7 +13,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.selector import BooleanSelector, EntitySelector, EntitySelectorConfig
 
 from .const import (
-    CONF_AUTO_SAVE, CONF_BARCODE_ENTITY, CONF_DEFAULT_MEAL, CONF_OFF_COUNTRY,
+    CONF_AUTO_SAVE, CONF_BARCODE_ENTITY, CONF_SCAN_COUNT_ENTITY, CONF_DEFAULT_MEAL, CONF_OFF_COUNTRY,
     CONF_OFF_ENABLED, CONF_OFF_LANGUAGE, CONF_WEIGHT_ENTITY, CONF_WEIGHT_TIMEOUT,
     CONF_ZERO_THRESHOLD, DEFAULT_OPTIONS, DOMAIN, MEALS,
 )
@@ -26,6 +26,9 @@ def _device_schema() -> vol.Schema:
             domain="sensor", device_class="weight", integration="esphome"
         )),
         vol.Required(CONF_BARCODE_ENTITY): EntitySelector(
+            EntitySelectorConfig(domain="sensor")
+        ),
+        vol.Required(CONF_SCAN_COUNT_ENTITY): EntitySelector(
             EntitySelectorConfig(domain="sensor")
         ),
     })
@@ -51,7 +54,7 @@ def _options_schema() -> vol.Schema:
     return vol.Schema(schema)
 
 
-async def _validate_entity_selection(hass, weight_entity: str, barcode_entity: str) -> str | None:
+async def _validate_entity_selection(\n    hass, weight_entity: str, barcode_entity: str, scan_count_entity: str\n) -> str | None:
     """Validate selected entities against the entity registry."""
     entity_registry = er.async_get(hass)
     weight = entity_registry.async_get(weight_entity)
@@ -60,6 +63,9 @@ async def _validate_entity_selection(hass, weight_entity: str, barcode_entity: s
     barcode = entity_registry.async_get(barcode_entity)
     if barcode is None or not barcode.entity_id.startswith("sensor."):
         return "invalid_barcode_entity"
+    scan_count = entity_registry.async_get(scan_count_entity)
+    if scan_count is None or not scan_count.entity_id.startswith("sensor."):
+        return "invalid_scan_count_entity"
     return None
 
 
@@ -74,7 +80,10 @@ class FoodDiaryConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="already_configured")
         errors: dict[str, str] = {}
         if user_input is not None:
-            error = await _validate_entity_selection(self.hass, user_input[CONF_WEIGHT_ENTITY], user_input[CONF_BARCODE_ENTITY])
+            error = await _validate_entity_selection(
+                self.hass, user_input[CONF_WEIGHT_ENTITY],
+                user_input[CONF_BARCODE_ENTITY], user_input[CONF_SCAN_COUNT_ENTITY]
+            )
             if error:
                 errors["base"] = error
             else:
