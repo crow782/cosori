@@ -210,3 +210,20 @@ Correzione importante della correlazione eventi: l'evento ESPHome legge Last Bar
 ### Fase 10 — Persistenza sessioni pendenti e verifica
 
 Confermato nel codice il collegamento SQLite: inizio scansione → `save_pending_session`; setup coordinator → `get_pending_session`; salvataggio porzione → inserimento entry e cancellazione sessione nella stessa transazione. Corretto il timeout breve: non cancella più la sessione, che resta disponibile fino alla retention di 24 ore. La persistenza resta da coprire con test del coordinator e runtime HA.
+
+
+## CI run #46178929795 — analisi e correzione (2026-11-28)
+
+Esecuzione su commit `40621c9051227e81b1c0c51957cee4eb84e49bec`:
+- compileall Python: OK;
+- node --check card Aurora: OK;
+- JSON manifest/traduzioni: OK;
+- cmp copie storage: OK;
+- SQLite: 17 test passati, 5 errori;
+- acquisition: saltato perché il passo precedente è fallito.
+
+Causa unica dei cinque errori: `PendingScanSessionPersistenceTests` non definiva `setUp`, quindi `self.store` e `self.db_path` non esistevano. Corretto aggiungendo `setUp` con database temporaneo dedicato e `tearDown` per cleanup.
+
+Correzione commit: `fca1e59589dd06d4601b5f848e5e97bbfb77e971`.
+
+La correzione è stata riletta su GitHub. Non è ancora disponibile una nuova run associata al commit di correzione: occorre rilanciare manualmente il workflow sul branch `waage+scanner`. Non dichiarare la CI verde finché il nuovo run non termina con successo.
