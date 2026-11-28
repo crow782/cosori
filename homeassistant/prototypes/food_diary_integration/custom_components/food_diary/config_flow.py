@@ -20,7 +20,7 @@ from .const import (
 
 
 def _device_schema() -> vol.Schema:
-    """Return selectors for the weight and barcode entities."""
+    """Return selectors for the scale, barcode and scan counter entities."""
     return vol.Schema({
         vol.Required(CONF_WEIGHT_ENTITY): EntitySelector(EntitySelectorConfig(
             domain="sensor", device_class="weight", integration="esphome"
@@ -71,6 +71,8 @@ async def _validate_entity_selection(
     scan_count = entity_registry.async_get(scan_count_entity)
     if scan_count is None or not scan_count.entity_id.startswith("sensor."):
         return "invalid_scan_count_entity"
+    if len({weight_entity, barcode_entity, scan_count_entity}) != 3:
+        return "duplicate_entities"
     return None
 
 
