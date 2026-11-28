@@ -165,3 +165,19 @@ Serve un percorso alternativo quando non si effettua la scansione o il barcode n
 - [ARCHITECTURE.md](ARCHITECTURE.md) – proposta di integrazione custom Home Assistant con database SQLite locale, catalogo alimenti separato dal diario, snapshot nutrizionali, servizi e criteri di prova.
 
 **Stato della decisione:** proposta documentata, non ancora implementata né collaudata. Il package attuale resta invariato. Il prossimo passo è realizzare un prototipo isolato dell'integrazione e verificare persistenza, query e backup prima di collegarlo al flusso Cosori/GM67.
+
+
+## Prototipo SQLite isolato – primo avanzamento
+
+Cartella: `homeassistant/prototypes/food_diary_sqlite/`
+
+- [x] Creata una cartella di prototipo separata dai package e dai firmware originali.
+- [x] Aggiunto un livello dati Python indipendente da Home Assistant, basato su SQLite standard.
+- [x] Aggiunto schema SQL leggibile.
+- [x] Aggiunti test automatici per catalogo, barcode duplicati, snapshot nutrizionali, persistenza dopo riapertura, valori sconosciuti e integrità.
+- [ ] Eseguire i test in un ambiente Python locale: il tentativo di clonare il repository nell'ambiente di lavoro non è riuscito per indisponibilità DNS/rete.
+- [ ] Eseguire gli stessi test con la versione Python effettivamente usata dall'installazione Home Assistant.
+- [ ] Aggiungere query aggregate per giorno, settimana e mese.
+- [ ] Solo dopo i test, realizzare l'integrazione Home Assistant vera e propria.
+
+**Nota di isolamento:** nessun file in `homeassistant/packages/` o `esphome/` è stato modificato. Il prototipo non è installabile e non deve essere copiato nella configurazione attiva.
