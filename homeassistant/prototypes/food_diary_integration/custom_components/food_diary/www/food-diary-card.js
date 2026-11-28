@@ -8,6 +8,7 @@ class FoodDiaryAuroraCard extends HTMLElement {
     this._data = null;
     this._status = null;
     this._loading = false;
+    this._refreshAgain = false;
     this._error = null;
     this._notice = null;
     this._offProducts = [];
@@ -58,7 +59,11 @@ class FoodDiaryAuroraCard extends HTMLElement {
   }
 
   async _refresh() {
-    if (!this._hass || !this._config || this._loading) return;
+    if (!this._hass || !this._config) return;
+    if (this._loading) {
+      this._refreshAgain = true;
+      return;
+    }
     this._loading = true;
     this._render();
     try {
@@ -78,6 +83,10 @@ class FoodDiaryAuroraCard extends HTMLElement {
     } finally {
       this._loading = false;
       this._render();
+      if (this._refreshAgain) {
+        this._refreshAgain = false;
+        this._refresh();
+      }
     }
   }
 
@@ -146,10 +155,11 @@ class FoodDiaryAuroraCard extends HTMLElement {
       const day = days.find((item) => item.date === key);
       const kcal = day?.totals?.energy_kcal;
       const height = kcal == null ? 4 : Math.max(5, Number(kcal) / max * 100);
+      const partial = day?.nutrient_coverage?.energy_kcal?.complete === false;
       const label = this._period === "month" ? String(date.getUTCDate()) :
         new Intl.DateTimeFormat("it-IT", { weekday: "short", timeZone: "UTC" }).format(date);
-      html += '<div class="bar-wrap"><div class="bar ' + (!day ? "nodata" : kcal == null ? "unknown" : "") +
-        '" style="height:' + height + '%" title="' + (day ? this._number(kcal) + " kcal" : "Nessun dato") +
+      html += '<div class="bar-wrap"><div class="bar ' + (!day ? "nodata" : kcal == null ? "unknown" : partial ? "partial" : "") +
+        '" style="height:' + height + '%" title="' + (day ? this._number(kcal) + (partial ? " kcal parziali" : " kcal") : "Nessun dato") +
         '"></div><small>' + label + '</small></div>';
     }
     return html + '</div>';
@@ -267,7 +277,7 @@ class FoodDiaryAuroraCard extends HTMLElement {
       '.date-nav{justify-content:center}.date-nav button{font-size:22px;line-height:1;padding:5px 13px}.date-nav strong{min-width:180px;text-align:center;font-size:14px}',
       '.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.metric{padding:14px;border:1px solid #383848;background:rgba(255,255,255,.035);border-radius:15px;min-width:0}.metric span,.macro span{display:block;color:#a8a8b8;font-size:12px}.metric strong{display:block;font-size:clamp(20px,3vw,27px);margin:8px 0}.metric small{font-size:12px;color:#b8b2c8}.metric em{font-size:11px;color:#a8a8b8;font-style:normal}.metric.hero{background:linear-gradient(135deg,rgba(139,120,213,.2),rgba(85,174,188,.08));border-color:#5a507f}',
       '.macros{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.macro{padding:11px;border-radius:12px;background:#292a38}.macro strong{display:block;margin-top:5px;font-size:15px}',
-      '.panel{padding:15px;border:1px solid #353545;background:rgba(255,255,255,.025);border-radius:16px}.bars{height:110px;display:flex;align-items:flex-end;gap:4px;overflow-x:auto;padding:12px 2px 0}.bar-wrap{height:100%;min-width:18px;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}.bar{width:min(100%,22px);min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#55aebc,#8b78d5)}.bar.nodata{background:#484957;opacity:.5}.bar.unknown{background:#d99a5b}.bar-wrap small{font-size:9px;color:#a8a8b8;white-space:nowrap}',
+      '.panel{padding:15px;border:1px solid #353545;background:rgba(255,255,255,.025);border-radius:16px}.bars{height:110px;display:flex;align-items:flex-end;gap:4px;overflow-x:auto;padding:12px 2px 0}.bar-wrap{height:100%;min-width:18px;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}.bar{width:min(100%,22px);min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#55aebc,#8b78d5)}.bar.nodata{background:#484957;opacity:.5}.bar.unknown,.bar.partial{background:#d99a5b}.bar-wrap small{font-size:9px;color:#a8a8b8;white-space:nowrap}',
       '.meal{padding:12px 0;border-bottom:1px solid #353545}.meal:last-child{border-bottom:0}.meal-head span{font-size:11px;color:#9292a2}.entry,.candidate{padding:10px 0;border-bottom:1px solid #343443}.entry:last-child,.candidate:last-child{border-bottom:0}.entry strong,.candidate strong{display:block;font-size:13px}.entry small,.candidate small{display:block;color:#a8a8b8;font-size:11px;margin-top:4px}.delete{background:transparent;color:#aaa;font-size:20px;padding:4px 9px}',
       '.pending{padding:13px;border-radius:14px;background:rgba(217,154,91,.09);border:1px solid rgba(217,154,91,.35);display:grid;gap:5px}.pending small,.muted,.empty,.hint{color:#a8a8b8;font-size:12px}.actions{display:flex;gap:8px;margin-top:7px}',
       '.form-panel{border:1px solid #383848;border-radius:15px;background:#222330;padding:13px}.form-panel summary{cursor:pointer;font-weight:650;color:#d9d1f6;padding:4px}form{display:grid;gap:12px;padding-top:14px}label{display:grid;gap:6px;font-size:12px;color:#bcb9c9}',
