@@ -20,7 +20,7 @@ automations can use one stable API.
 - `config_flow.py`: UI setup flow (single local instance).
 - `services.py`: Home Assistant actions and input validation.
 - `services.yaml`: action descriptions and selectors.
-- `strings.json`: prototype translations; before external HACS publication this must become `translations/en.json` and `translations/it.json`.
+- `translations/en.json` and `translations/it.json`: English and Italian UI/action translations.
 - `storage.py`: isolated SQLite repository copied from the tested-design
   prototype; it has no Home Assistant imports.
 
@@ -79,6 +79,23 @@ The action response feature is the current Home Assistant mechanism for
 returning collections and structured results that should not be represented
 as entity states. See the official [integration service actions guide](https://developers.home-assistant.io/docs/dev_101_services/).
 
+## Guided setup prototype
+
+The config flow now asks for:
+- an ESPHome sensor entity filtered to the weight device class;
+- an ESPHome device selected as the barcode scanner.
+
+The options flow allows changing both selections and configuring default meal,
+automatic save, weight timeout, zero threshold, and Open Food Facts country,
+language and enablement. Device selections are checked against Home Assistant's
+entity and device registries.
+
+This is still not end-to-end functional: the current ESPHome firmware event
+contains only `barcode`, so it does not yet identify which ESPHome node sent
+the scan. The firmware/event contract must add a stable scanner node identifier
+before the selected scanner can be enforced at runtime. No active firmware was
+changed.
+
 ## Actions
 
 | Action | Purpose | Response |
@@ -128,7 +145,7 @@ configurable fields, panel strategy, compatibility policy and release gates.
 ## Validation status
 
 This is a source prototype, not a released integration. It has not been loaded
-inside Home Assistant and has not passed hassfest, mypy, or integration tests.
+inside Home Assistant and has not passed hassfest, mypy, config-flow tests, or integration tests.
 Before installation, confirm the exact Home Assistant Core version and run
 the integration in a disposable/test instance. In particular, service response
 APIs and config-entry behavior must be checked against that Core version.
