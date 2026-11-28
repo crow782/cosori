@@ -205,3 +205,8 @@ Correzione importante della correlazione eventi: l'evento ESPHome legge Last Bar
 - add_entry(..., pending_session_id=...) inserisce la registrazione e rimuove la sessione pendente nella stessa transazione.
 - Aggiunti test SQLite per riapertura DB, singolo slot, delete condizionale, scadenza non valida e atomicità.
 - Copie storage prototipo/integrazione sincronizzate; test CI non ancora osservati.
+
+
+### Fase 10 — Persistenza sessioni pendenti e verifica
+
+Confermato nel codice il collegamento SQLite: inizio scansione → `save_pending_session`; setup coordinator → `get_pending_session`; salvataggio porzione → inserimento entry e cancellazione sessione nella stessa transazione. Corretto il timeout breve: non cancella più la sessione, che resta disponibile fino alla retention di 24 ore. La persistenza resta da coprire con test del coordinator e runtime HA.
