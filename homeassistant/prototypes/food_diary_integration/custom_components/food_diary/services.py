@@ -53,7 +53,9 @@ def async_setup_services(hass: HomeAssistant) -> None:
         coordinator = hass.data.get(DOMAIN, {}).get("coordinator")
         if coordinator is not None and food.get("barcode"):
             await coordinator.async_catalog_changed(food["barcode"])
-        return food if call.return_response else None(call: ServiceCall):
+        return food if call.return_response else None
+
+    async def update_food(call: ServiceCall):
         store = _store(hass)
         changes = {
             key: call.data[key]
